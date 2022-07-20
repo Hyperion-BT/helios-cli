@@ -14,11 +14,11 @@ program
 // hyperion compile <file_name>
 // hyperion compile <file_name> --data
 program.command("compile")
-    .description("Compiles a Plutus-Light or Plutus-Light Data file to JSON.")
+    .description("Compiles a Helios or Helios Data file to JSON.")
     .argument("file_path", "Path to the source file.")
     .option("-o, --output_file <path>", "Add custom output file.")
     .option("-p, --print_output", "Prints the result of the compilation")
-    .option("-d, --data", "Parse Plutus-Light Data.")
+    .option("-d, --data", "Parse Helios Data files.")
     .option("-v, --verbose", "Turn on verbose mode.")
     .action((file_path, options) => {
         let func = Helios.compileHeliosProgram;
@@ -34,7 +34,7 @@ program.command("compile")
 
 // hyperion pretty_print <file_name>
 program.command("pretty_print")
-    .description("Pretty print Plutus-Light source code.")
+    .description("Pretty print Helios source code.")
     .argument("file_path", "Path to the source file.")
     .option("-v, --verbose", "Turn on verbose mode.")
     .action((file_path, options) => {
@@ -89,7 +89,7 @@ program.command("dump")
 
 // hyperion parse <file_name>
 program.command("parse")
-    .description("Parses Plutus Light.")
+    .description("Parses Helios code.")
     .argument("file_path", "Path to the source file.")
     .option("-o, --output_file <output_path>", "Add custom output file.")
     .option("-v, --verbose", "Turn on verbose mode.")
@@ -107,11 +107,11 @@ program.command("parse")
 // hyperion tokenize <file_name> --bytes
 // hyperion tokenize <file_name> --hex
 program.command("tokenize")
-    .description("Tokenizes Plutus Light.")
+    .description("Tokenizes Helios code.")
     .argument("file_path", "Path to the source file.")
     .option("-o, --output_file <output_path>", "Add custom output file.")
     .option("-v, --verbose", "Turn on verbose mode.")
-    .option("-u, --upll", "Tokenize Untyped Plutus Light")
+    .option("-u, --upll", "Tokenize Untyped Helios.")
     .action((file_path, options) => {
         let func = Helios.tokenizeHelios;
         if (options.upll) { func = Helios.tokenizeUntypedHelios}

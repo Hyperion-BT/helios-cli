@@ -1,40 +1,40 @@
 # Hyperion
 
-This is a CLI meant to accompany the [Plutus Light compiler](https://github.com/OpenEngineer/plutus-light).
+This is a CLI meant to accompany the [Helios compiler](https://github.com/Hyperion-BT/Helios).
 
 ## Installation [WIP]
 
-The end goal is to host Hyperion on NPM and make it available via NPX.
+The end goal is to host Helios-CLI on NPM and make it available via NPX.
 
 ## Usage
 
-Currently to try Hyperion you have to:
+Currently to try Hyperion you have to clone the repo and use the `/target/index.js` file directly.
 
-- Clone the repo:
+```shell
+$ node Helios-CLI/target/index.js 
+  ...
+```
 
-  ```shell
-  $ git clone https://github.com/Ch1n3du/Hyperion
-    ...
-  ```
-
-- To use Hyperion:
+### To use Hyperion:
 
   ```shell
 
-  $ node Hyperion/target/index.js
-    Usage: Hyperion [options] [command]
+  $ helios-cli --help
+    Usage: Helios-Cli [options] [command]
 
-    A small CLI to help the ergonomics of Plutus-Light.
+    A small helper CLI for the Helios language.
+
     Options:
       -V, --version                       output the version number
       -h, --help                          display help for command
 
     Commands:
-      compile [options] <file_path>       Compiles a Plutus-Light or Plutus-Light Data file to JSON.
-      pretty_print [options] <file_path>  Pretty print Plutus-Light source code.
+      compile [options] <file_path>       Compiles a Helios or Helios Data file to JSON.
+      pretty_print [options] <file_path>  Pretty print Helios source code.
       deserialize [options] <file_path>   Deserialze Plutus Core from bytes.
       dump [options] <file_path>          Dumps Plutus Core CBOR as bytes or a HexString.
-      parse [options] <file_path>         Parses Plutus Light.
-      tokenize [options] <file_path>      Tokenizes Plutus Light.
+      parse [options] <file_path>         Parses Helios code.
+      tokenize [options] <file_path>      Tokenizes Helios code.
       help [command]                      display help for command
+
   ```
