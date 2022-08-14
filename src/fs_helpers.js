@@ -108,6 +108,7 @@ function write_to_file(file_path, output_file_data) {
         }
     } else {
         fs.writeFileSync(file_path, output_file_data);
+        // console.log(`Just Read: ${read_file(file_path)}`)
     }
 }
 
@@ -145,79 +146,58 @@ function mkdir(dir_name) {
 
 /**
  * 
- * @param {string} source_file_path 
- * @param {Function} action 
- * @param {string} action_name 
- * @returns {string}
+ * @param {string} source_dir 
+ * @param {string} file_extension
+ * @returns {string[]}
  */
-function map_file_to_string(
-    source_file_path, 
-    action, 
-    action_name,
-) {
-    console.log(`${action_name} ${source_file_path}`)
-    return action(read_file(source_file_path));
-}
+function get_files_in_dir(source_dir, file_extension) {
+    /** @type {string[]} */
+    let files = fs.readdirSync(source_dir)
+        .filter((file_name) => file_name.endsWith(file_extension))
+        .map((file_name) => source_dir + (source_dir.endsWith("/") ? "" : "/") + file_name)
 
-/**
- * 
- * @param {string} source_file_path 
- * @param {Function} action 
- * @param {string} action_name 
- * @param {string} output_file_path 
- */
-function map_file_to_file(
-    source_file_path, 
-    action, 
-    action_name,
-    output_file_path
-) {
-    let payload = map_file_to_string(source_file_path, action, action_name);
-    write_to_file(output_file_path, payload);
+    return files
 }
 
 /**
  * 
  * @param {string} source_dir 
- * @param {string} target_dir 
- * @param {Function} action 
- * @param {string} action_name 
- * @param {Function} formatter 
- * @param {string} file_extension 
+ * @param {string} file_extension
+ * @returns {string[]}
  */
-function map_dir_to_dir(
-    source_dir,
-    target_dir,
-    action,
-    action_name,
-    formatter,
-    file_extension
-) {
-    let dir = fs.opendirSync(source_dir);
+function get_file_names_in_dir(source_dir, file_extension) {
+    /** @type {string[]} */
+    let files = fs.readdirSync(source_dir)
+        .filter((file_name) => file_name.endsWith(file_extension))
+        .map(file_name => file_extension.split(".")[0])
 
-    let source_file_paths = [];
-    
-    let dirent = dir.readSync();
-    console.log(source_dir);
-    console.log(target_dir);
-    while (dirent) {
-        if (dirent.name.endsWith(file_extension)) {
-            let _path = dirent.name
-            console.log(`Directory member: ${_path}`)
-            source_file_paths.push(_path);
-        }
-        dirent = dir.readSync();
+    return files
+}
+
+/** 
+ * @typedef {Object} HephConfig
+ * @property {string} srcDir     - Directory for Helios source files.
+ * @property {string} outDir     - Directory for storing compilation artifacts.
+ * @property {string} paramsDir   - Directory for storing contract parameters. In format 'contract_name.params.json'.
+ */
+
+/** @type {HephConfig} */
+const DEFAULT_CONFIG = {
+    srcDir: "./src",
+    outDir: "./build",
+    paramsDir: "./params"
+}
+
+/**
+ * @returns {HephConfig}
+ */
+function get_config() {
+    let default_path = "./heph.config.json"
+    if (exists(default_path)) {
+        return JSON.parse(read_file(default_path))
+    } else {
+        return DEFAULT_CONFIG
     }
-
-    // Makes directory if doesn't exists
-    mkdir(target_dir)
-     
-    source_file_paths.forEach((file_name) => {
-        let source_path = source_dir + (source_dir.endsWith("/") ? "" : "/") + file_name
-        let target_path = target_dir + (target_dir.endsWith("/") ? "" : "/") + formatter(file_name)
-        console.log(`Source Path: ${source_path}`)
-        map_file_to_file(source_path, action, action_name, target_path)
-    })
 }
 
 export { 
@@ -228,7 +208,7 @@ export {
     format_file_path,
     read_file,
     write_to_file,
-    map_file_to_file,
-    map_file_to_string,
-    map_dir_to_dir,
+    get_files_in_dir,
+    get_file_names_in_dir,
+    get_config,
 }

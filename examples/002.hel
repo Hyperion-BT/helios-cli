@@ -1,0 +1,5 @@
+validator always_true
+
+func main() -> Bool {
+    true
+}
