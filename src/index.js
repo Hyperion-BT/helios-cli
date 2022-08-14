@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { compile } from "./commands/compile.js";
 
 import { Command } from "commander";
