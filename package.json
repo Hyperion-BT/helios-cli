@@ -1,24 +1,18 @@
 {
-  "name": "helios-cli",
+  "name": "heph",
   "version": "1.0.0",
-  "description": "A small CLI for the Helios programming language.",
+  "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Hyperion-BT/Helios-CLI.git"
-  },
-  "author": "Ch1n3du",
+  "keywords": [],
+  "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Hyperion-BT/Helios-CLI/issues"
-  },
-  "homepage": "https://github.com/Hyperion-BT/Helios-CLI#readme",
-  "devDependencies": {
-    "@types/node": "^18.0.6",
+  "dependencies": {
+    "@hyperionbt/helios": "^0.2.1",
     "commander": "^9.4.0",
-    "typescript": "^4.7.4"
+    "esm": "^3.2.25"
   }
 }
