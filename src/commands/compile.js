@@ -96,6 +96,8 @@ const compile= new Command("compile")
 
             compile_action(src_path, options.params, verbose, options.output_file)
         } else if (options.directory) {
+            // TODO Add custom notification
+            console.log(`Compiling files in '${options.directory}'`);
             let files = fs.get_files_in_dir(options.directory, ".hel")
 
             files.forEach((src_path) => {

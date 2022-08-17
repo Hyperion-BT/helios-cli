@@ -183,20 +183,43 @@ function get_file_names_in_dir(source_dir, file_extension) {
 
 /** @type {HephConfig} */
 const DEFAULT_CONFIG = {
-    srcDir: "./src",
-    outDir: "./build",
-    paramsDir: "./params"
+    srcDir: "src",
+    outDir: "build",
+    paramsDir: "params",
+}
+
+/**
+ * Adds prefix to config paths to make sure to allow using the config in different directories.
+ * @param {HephConfig} config 
+ * @param {string} path_prefix
+ * @returns {HephConfig}
+ */
+function format_config(path_prefix, config) {
+    config.srcDir = path_prefix + config.srcDir;
+    config.outDir = path_prefix + config.outDir;
+    config.paramsDir = path_prefix + config.paramsDir;
+
+    return config
 }
 
 /**
  * @returns {HephConfig}
  */
 function get_config() {
-    let default_path = "./heph.config.json"
+    let default_path = "./heph.config.json";
+    let upper_path = "../heph.config.json";
+
+    /** @type {HephConfig} */
+    let raw_conf;
+
     if (exists(default_path)) {
-        return JSON.parse(read_file(default_path))
+        raw_conf = JSON.parse(read_file(default_path));
+        return format_config("./", raw_conf);
+    } else if (exists(upper_path)) {
+        raw_conf = JSON.parse(read_file(upper_path));
+        return format_config("../", raw_conf);
     } else {
-        return DEFAULT_CONFIG
+        return format_config("./", DEFAULT_CONFIG);
     }
 }
 
