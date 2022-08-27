@@ -97,7 +97,7 @@ const compile= new Command("compile")
             compile_action(src_path, options.params, verbose, options.output_file)
         } else if (options.directory) {
             // TODO Add custom notification
-            console.log(`Compiling files in '${options.directory}'`);
+            console.log(`🤖 Compiling files in '${options.directory}'`);
             let files = fs.get_files_in_dir(options.directory, ".hl")
 
             files.forEach((src_path) => {
@@ -107,11 +107,14 @@ const compile= new Command("compile")
 
             let  {srcDir, buildDir, paramsDir }= fs.get_config();
             let file_names = fs.get_file_names_in_dir(srcDir, ".hl")
-            console.log(`File names from compile '${file_names}'`);
 
             // Make build directory if it doesn't exist.
-            fs.mkdir(buildDir);
+            if (!fs.exists(buildDir)) {
+                console.log(`Creating ${buildDir} to store builds.`)
+                fs.mkdir(buildDir);
+            }
 
+            console.log(`🤖 Compiling all files in '${srcDir}'.`);
             file_names.forEach((file_name) => {
                 const format_dir = (dir, ext) =>{ return dir + (dir.endsWith("/") ? "" : "/") + file_name + ext} ;
 

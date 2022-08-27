@@ -172,16 +172,18 @@ function get_files_in_dir(source_dir, file_extension) {
 /**
  * 
  * @param {string} source_dir 
- * @param {string} file_extension
+ * @param {string} extension
  * @returns {string[]}
  */
-function get_file_names_in_dir(source_dir, file_extension) {
+function get_file_names_in_dir(source_dir, extension) {
     /** @type {string[]} */
-    let files = fs.readdirSync(source_dir)
-        .filter((file_name) => file_name.endsWith(file_extension))
-        .map(file_name => file_extension.split(".")[0])
+    return fs.readdirSync(source_dir)
+        .map((file_name) => path.parse(file_name))
+        .filter((path_obj) => path_obj.ext == extension)
+        .map(path_obj => path_obj.name );
 
-    return files
+    // console.log(`Files in '${source_dir}': ${files}`)
+    // return files
 }
 
 /** 
@@ -226,7 +228,7 @@ function get_config() {
 
     if (exists(default_path)) {
         raw_conf = JSON.parse(read_file(default_path));
-        return format_config("./", raw_conf);
+        return format_config("", raw_conf);
     } else if (exists(upper_path)) {
         raw_conf = JSON.parse(read_file(upper_path));
         return format_config("../", raw_conf);
