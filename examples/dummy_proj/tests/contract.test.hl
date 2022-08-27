@@ -1,0 +1,5 @@
+testing always_true
+
+    func main() -> Bool {
+        false
+    }
