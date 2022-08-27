@@ -1,0 +1,5 @@
+spending always_true
+            
+    func main(context: ScriptContext) -> Bool {
+        true
+    }

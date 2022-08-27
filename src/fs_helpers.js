@@ -145,6 +145,16 @@ function mkdir(dir_name) {
 }
 
 /**
+ * @param {string} base_dir
+ * @param {string} child_dir
+ * @returns {string}
+ */
+// TODO Handle the child dir.
+function append_path(base_dir, child_dir) {
+    return base_dir + (base_dir.endsWith("/") ? "" : "/") + child_dir; 
+}
+
+/**
  * 
  * @param {string} source_dir 
  * @param {string} file_extension
@@ -177,15 +187,17 @@ function get_file_names_in_dir(source_dir, file_extension) {
 /** 
  * @typedef {Object} HephConfig
  * @property {string} srcDir     - Directory for Helios source files.
- * @property {string} outDir     - Directory for storing compilation artifacts.
- * @property {string} paramsDir   - Directory for storing contract parameters. In format 'contract_name.params.json'.
+ * @property {string} buildDir     - Stores contract builds.
+ * @property {string} paramsDir  - Stores contract parameters. In format 'contract_name.params.json'.
+ * @property {string} testsDir   - Stores tests 
  */
 
 /** @type {HephConfig} */
 const DEFAULT_CONFIG = {
-    srcDir: "src",
-    outDir: "build",
-    paramsDir: "params",
+    srcDir: "./",
+    buildDir: "build/",
+    paramsDir: "params/",
+    testsDir: "tests/"
 }
 
 /**
@@ -196,7 +208,7 @@ const DEFAULT_CONFIG = {
  */
 function format_config(path_prefix, config) {
     config.srcDir = path_prefix + config.srcDir;
-    config.outDir = path_prefix + config.outDir;
+    config.buildDir = path_prefix + config.buildDir;
     config.paramsDir = path_prefix + config.paramsDir;
 
     return config
@@ -227,6 +239,7 @@ export {
     exists,
     mkdir,
     rm_dir,
+    append_path,
     parse_file_path,
     format_file_path,
     read_file,
@@ -234,4 +247,5 @@ export {
     get_files_in_dir,
     get_file_names_in_dir,
     get_config,
+    DEFAULT_CONFIG,
 }

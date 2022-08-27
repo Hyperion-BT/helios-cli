@@ -98,25 +98,29 @@ const compile= new Command("compile")
         } else if (options.directory) {
             // TODO Add custom notification
             console.log(`Compiling files in '${options.directory}'`);
-            let files = fs.get_files_in_dir(options.directory, ".hel")
+            let files = fs.get_files_in_dir(options.directory, ".hl")
 
             files.forEach((src_path) => {
                 compile_action(src_path, undefined, verbose, undefined)
             })
         } else {
 
-            let  {srcDir, outDir, paramsDir }= fs.get_config();
-            let file_names = fs.get_file_names_in_dir(srcDir, ".hel")
+            let  {srcDir, buildDir, paramsDir }= fs.get_config();
+            let file_names = fs.get_file_names_in_dir(srcDir, ".hl")
+            console.log(`File names from compile '${file_names}'`);
+
+            // Make build directory if it doesn't exist.
+            fs.mkdir(buildDir);
 
             file_names.forEach((file_name) => {
                 const format_dir = (dir, ext) =>{ return dir + (dir.endsWith("/") ? "" : "/") + file_name + ext} ;
 
-                let src_path = format_dir(srcDir, ".hel");
+                let src_path = format_dir(srcDir, ".hl");
 
                 let params_path_ = format_dir(paramsDir, ".params.json");
                 let params_path = fs.exists(params_path_) ? params_path_ : undefined;
 
-                let output_path = format_dir(outDir, ".json");
+                let output_path = format_dir(buildDir, ".json");
 
                 compile_action(src_path, params_path, verbose, output_path)
             })
