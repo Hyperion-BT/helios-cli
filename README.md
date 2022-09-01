@@ -9,8 +9,9 @@ To install Heph:
 
 ```shell
 $ sudo npm i -g @hyperionbt/heph
-  ...
 ```
+
+>**Note:** `sudo` was needed to install the cli globally on my system.
 
 ## Usage
 
