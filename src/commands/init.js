@@ -1,27 +1,9 @@
 import { Command } from "commander";
 import * as fs from "../fs_helpers.js";
 
-const DEFAULT_CONTRACT_FILE =
-`spending always_true
-            
-    func main(context: ScriptContext) -> Bool {
-        true
-    }`;
-
-const DEFAULT_TEST_FILE =
-`testing always_true
-
-    func main() -> Bool {
-        false
-    }`;
-
-const DEFAULT_PARAM_FILE =
-`{}`;
-
-
-const init = new Command("init")
+const init_cmd = new Command("init")
     .description("Initializes a Helios project.")
-    .argument("project_name", "The name of your Helios project.")
+    .argument("project-name", "The name of your Helios project.")
     .action((project_name) => {
         fs.mkdir(project_name);
         let config = fs.DEFAULT_CONFIG;
@@ -38,17 +20,17 @@ const init = new Command("init")
         fs.mkdir(tests_dir);
         fs.mkdir(params_dir)
         fs.write_to_file(
-            fs.append_path(contracts_dir, "contract.hl"),
-            DEFAULT_CONTRACT_FILE,
+            fs.append_path(contracts_dir, `${project_name}.hl`),
+            fs.make_contract(project_name, "spending"),
         )
         fs.write_to_file(
-            fs.append_path(tests_dir, "contract.test.hl"),
-            DEFAULT_TEST_FILE
+            fs.append_path(tests_dir, `${project_name}.test.hl`),
+            fs.make_contract(project_name, "testing"),
         )
         fs.write_to_file(
-           fs.append_path(params_dir, "contract.params.json"),
+           fs.append_path(params_dir, `${project_name}.params.json`),
            "{}"
         )
     })
 
-export { init }
+export { init_cmd }

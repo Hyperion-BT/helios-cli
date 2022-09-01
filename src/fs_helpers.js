@@ -237,6 +237,30 @@ function get_config() {
     }
 }
 
+/**
+ * 
+ * @param {any} name 
+ * @param {string} purpose 
+ * @returns {string}
+ */
+function make_contract(name, purpose) {
+    if (["spending", "minting", "testing"].includes(name)) {
+        throw(`❌ Invalid script purpose. ${purpose}`)
+    }
+
+    if (!isNaN(name)) {
+        throw(`❌ Script name cant be a number. ${purpose}`)
+    }
+
+    return (
+`${purpose} ${name} 
+            
+func main() -> Bool {
+    true
+}`)
+}
+
+
 export { 
     exists,
     mkdir,
@@ -250,4 +274,5 @@ export {
     get_file_names_in_dir,
     get_config,
     DEFAULT_CONFIG,
+    make_contract,
 }
