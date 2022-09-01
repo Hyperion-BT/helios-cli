@@ -83,7 +83,7 @@ function compile_action(src_path, params_path, verbose, output_path,) {
 // TODO hyperion compile                   
 const compile_cmd = new Command("compile")
     .description("Compiles a Helios or Helios Data file to JSON.")
-    .option("-i, input_file", "Path to the source file.")
+    .option("-i, --input_file <input_file>", "Path to the source file.")
     .option("-v, --verbose", "Turn on verbose mode.")
     .option("-o, --output_file <path>", "Add custom output file.")
     .option("-p, --params <param_path>", "Prints the result of the compilation")
@@ -120,7 +120,7 @@ const compile_cmd = new Command("compile")
 
             // Make build directory if it doesn't exist.
             if (!fs.exists(buildDir)) {
-                console.log(`Creating ${buildDir} to store builds.`)
+                console.log(`Creating '${buildDir}' to store builds.`)
                 fs.mkdir(buildDir);
             }
 

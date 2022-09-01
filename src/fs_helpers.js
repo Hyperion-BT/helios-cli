@@ -244,10 +244,6 @@ function get_config() {
  * @returns {string}
  */
 function make_contract(name, purpose) {
-    if (["spending", "minting", "testing"].includes(name)) {
-        throw(`❌ Invalid script purpose. ${purpose}`)
-    }
-
     if (!isNaN(name)) {
         throw(`❌ Script name cant be a number. ${purpose}`)
     }

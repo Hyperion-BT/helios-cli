@@ -31,6 +31,10 @@ const init_cmd = new Command("init")
            fs.append_path(params_dir, `${project_name}.params.json`),
            "{}"
         )
+
+        console.log(`✨ Created project '${project_name}'`)
+        console.log(`   Type 'cd ${project_name}'`)
+        console.log("   Then type 'heph compile' to compile the project.")
     })
 
 export { init_cmd }
