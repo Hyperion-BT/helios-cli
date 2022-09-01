@@ -1,7 +1,7 @@
 {
-  "name": "heph",
+  "name": "@hyperionbt/heph",
   "version": "1.0.0",
-  "description": "",
+  "description": "A CLI tool for writing smart contracts on the Cardano blockchain in Helios.",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -11,8 +11,9 @@
     "heph": "src/index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Daniel Onyesoh",
   "license": "ISC",
+  "homepage": "https://github.com/Hyperion-BT/Heph",
   "dependencies": {
     "@hyperionbt/helios": "^0.5.1",
     "commander": "^9.4.0",

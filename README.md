@@ -7,7 +7,10 @@ Heph is inspired by Rust's [Cargo](https://github.com/rust-lang/cargo) and Cairo
 
 To install Heph:
 
-- Clone the repo
+```shell
+$ sudo npm i -g @hyperionbt/heph
+  ...
+```
 
 ## Usage
 
