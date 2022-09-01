@@ -22,8 +22,8 @@ To create a new project, type `heph init <project-name>`, for example:
 ```shell
 $ heph init atomic
   ✨ Created project 'atomic'
-     Type 'cd atomic'
-     Then type 'heph compile' to compile the project.
+     type 'cd atomic'
+     then type 'heph compile' to compile the project.
 ```
 
 ### Compiling Code
