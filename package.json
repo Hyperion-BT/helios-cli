@@ -8,8 +8,8 @@
     "helios": "./index.js"
   },
   "repository": {
-	  "type": "git",
-	  "url": "git+https://github.com/hyperion-bt/helios.git"
+    "type": "git",
+    "url": "git+https://github.com/hyperion-bt/helios.git"
   },
   "author": "Daniel Onyesoh",
   "license": "UNLICENSE",

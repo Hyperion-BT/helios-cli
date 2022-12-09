@@ -3,8 +3,11 @@ import fs from 'node:fs';
 import { resolve as absPath } from 'node:path';
 import process from 'node:process';
 import { 
+	Address,
+	deserializeUplc,
 	Program,
-	UserError as HeliosError
+	UserError as HeliosError,
+	VERSION as HELIOS_VERSION
 } from 'helios';
 
 const VERSION = "0.1.0";
@@ -13,6 +16,9 @@ const USAGE = `Usage:
   helios [-h|--help] <command> <command-options>
 
 Commands:
+  address <json-file>
+    -m, --mainnet
+
   compile <input-file> 
     -I, --include   <include-module-dir>
     -o, --output    <output-file>
@@ -57,7 +63,7 @@ function parseOption(args, shortName, longName, allowMultiple = false) {
 
 		const isShort = args[i] === shortName;
 
-		const option = args.splice(i, 2).shift();
+		const option = args.splice(i, 2).slice(1).shift();
 
 		if (option === undefined) {
 			throw new UsageError(`${isShort ? shortName : longName} expects an argument`);
@@ -125,16 +131,10 @@ function assertNoMoreOptions(args) {
 	});
 }
 
-function parseCompileOptions(args) {
-	const options = {
-		output: parseOption(args, "-o", "--output"),
-		includeDirs: parseOption(args, "-I", "--include", true),
-		optimize: parseFlag(args, "-O", "--optimize")
-	};
-
-	assertNoMoreOptions(args);
-
-	return options;
+function assertEmpty(args) {
+	if (args.length > 0) {
+		throw new UsageError(`unused arg '${args[0]}'`);
+	}
 }
 
 function readFile(path) {
@@ -145,6 +145,47 @@ function readFile(path) {
 	} else {
 		return fs.readFileSync(path, 'utf8');
 	}
+}
+
+function parseCalcScriptAddressOptions(args) {
+	const options = {
+		isMainnet: parseFlag(args, "-m", "--mainnet")
+	};
+
+	assertNoMoreOptions(args);
+
+	return options;
+}
+
+async function calcScriptAddress(args) {
+	const options = parseCalcScriptAddressOptions(args);
+
+
+	const inputFile = args.shift();
+
+	if (inputFile === undefined) {
+		throw new UsageError("no script file specified")
+	}
+
+	assertEmpty(args);
+
+	const uplcProgram = deserializeUplc(readFile(inputFile));
+
+	const address = new Address([options.isMainnet ? 0x71 : 0x70].concat(uplcProgram.hash().slice()));
+
+	console.log(address.toBech32());
+}
+
+function parseCompileOptions(args) {
+	const options = {
+		output: parseOption(args, "-o", "--output"),
+		includeDirs: parseOption(args, "-I", "--include", true),
+		optimize: parseFlag(args, "-O", "--optimize")
+	};
+
+	assertNoMoreOptions(args);
+
+	return options;
 }
 
 function listIncludes(inputFile, dirs) {
@@ -178,6 +219,8 @@ async function compile(args) {
 		throw new UsageError("no input-file specified")
 	}
 
+	assertEmpty(args);
+
 	const includeDirs = options.includeDirs.slice();
 	includeDirs.unshift(".");
 
@@ -189,7 +232,16 @@ async function compile(args) {
 
 	const uplc = Program.new(inputSource, sources).compile(options.optimize).serialize();
 
-	console.log(uplc);
+	if (options.output !== undefined) {
+		fs.writeFileSync(options.output, uplc);
+	} else {
+		console.log(uplc);
+	}
+}
+
+function printVersion() {
+	console.log(`Helios-CLI version: ${VERSION}`);
+	console.log(`Helios lib version: ${HELIOS_VERSION}`);
 }
 
 async function mainInternal(args) {
@@ -199,7 +251,7 @@ async function mainInternal(args) {
 	}
 
 	if (args.length === 0) {
-		throw new UsageError("expected 1 or more args, got 0");
+		throw new UsageError("expected 1 or more args");
 	}
 
 	const command = args.shift()
@@ -209,11 +261,14 @@ async function mainInternal(args) {
 	}
 
 	switch (command) {
+		case "address":
+			await calcScriptAddress(args);
+			break;
 		case "compile":
 			await compile(args);
 			break;
 		case "version":
-			console.log(VERSION);
+			printVersion();
 			break;
 		default:
 			throw new UsageError(`unrecognized command "${command}"`);

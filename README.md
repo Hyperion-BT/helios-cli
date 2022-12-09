@@ -1,6 +1,6 @@
 # Helios-CLI
 
-A CLI tool for compiled [Helios](https://github.com/Hyperion-BT/Helios) smart contracts.
+A CLI tool for compiling [Helios](https://github.com/Hyperion-BT/Helios) smart contracts.
 
 ## Installation
 
