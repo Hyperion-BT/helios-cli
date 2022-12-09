@@ -1,7 +1,7 @@
 {
   "name": "@hyperionbt/helios-cli",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI tool for compiling Cardano smart contracts written in Helios, and building Cardano transactions.",
   "main": "./index.js",
   "bin": {

@@ -10,7 +10,7 @@ import {
 	VERSION as HELIOS_VERSION
 } from 'helios';
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 const USAGE = `Usage:
   helios [-h|--help] <command> <command-options>
