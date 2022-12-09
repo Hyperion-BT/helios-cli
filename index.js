@@ -10,7 +10,7 @@ import {
 	VERSION as HELIOS_VERSION
 } from 'helios';
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.2";
 
 const USAGE = `Usage:
   helios [-h|--help] <command> <command-options>
@@ -23,6 +23,9 @@ Commands:
     -I, --include   <include-module-dir>
     -o, --output    <output-file>
     -O, --optimize
+
+  eval <input-file> <param-name>
+    -I, --include   <include-module-dir>
 
   version
 `;
@@ -232,11 +235,54 @@ async function compile(args) {
 
 	const uplc = Program.new(inputSource, sources).compile(options.optimize).serialize();
 
-	if (options.output !== undefined) {
+	if (options.output != null) {
 		fs.writeFileSync(options.output, uplc);
 	} else {
 		console.log(uplc);
 	}
+}
+
+function parseEvalParamOptions(args) {
+	const options = {
+		includeDirs: parseOption(args, "-I", "--include", true)
+	};
+
+	assertNoMoreOptions(args);
+
+	return options;
+}
+
+async function evalParam(args) {
+	const options = parseEvalParamOptions(args);
+
+	const inputFile = args.shift();
+
+	if (inputFile === undefined) {
+		throw new UsageError("no input-file specified")
+	}
+
+	const paramName = args.shift();
+
+	if (paramName === undefined) {
+		throw new UsageError("no param-name specified");
+	}
+
+	assertEmpty(args);
+
+	const includeDirs = options.includeDirs.slice();
+	includeDirs.unshift(".");
+
+	PATHS = listIncludes(inputFile, includeDirs);
+
+	const sources = PATHS.map(p => readFile(p));
+
+	const inputSource = sources.shift();
+
+	const program = Program.new(inputSource, sources);
+
+	const json = program.evalParam(paramName).data.toSchemaJson();
+
+	console.log(json);
 }
 
 function printVersion() {
@@ -266,6 +312,9 @@ async function mainInternal(args) {
 			break;
 		case "compile":
 			await compile(args);
+			break;
+		case "eval":
+			await evalParam(args);
 			break;
 		case "version":
 			printVersion();
