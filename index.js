@@ -5,12 +5,13 @@ import process from 'node:process';
 import { 
 	Address,
 	deserializeUplc,
+	extractScriptPurposeAndName,
 	Program,
 	UserError as HeliosError,
 	VERSION as HELIOS_VERSION
 } from 'helios';
 
-const VERSION = "0.1.12";
+const VERSION = "0.1.13";
 
 const USAGE = `Usage:
   helios [-h|--help] <command> <command-options>
@@ -23,9 +24,11 @@ Commands:
     -I, --include   <include-module-dir>
     -o, --output    <output-file>
     -O, --optimize
+    -D<param-name>  <param-value>
 
   eval <input-file> <param-name>
     -I, --include   <include-module-dir>
+    -D<param-name>  <param-value>
 
   version
 `;
@@ -95,6 +98,36 @@ function parseOption(args, shortName, longName, allowMultiple = false) {
 				throw new Error("should've been caught before");
 		}
 	}
+}
+
+function parseNamedOption(args, shortName) {
+	const result = {}
+
+	while (true) {
+		const i = args.findIndex(a => a.startsWith(shortName));
+
+		if (i === -1) {
+			break;
+		}
+
+		const [paramName_, paramValue] = args.splice(i, 2);
+
+		if (paramName_ == undefined) {
+			throw new Error("unexpected");
+		} else if (paramValue == undefined) {
+			throw new UsageError(`expected value after ${paramName_}`);
+		}
+
+		const paramName = paramName_.slice(shortName.length);
+
+		if (paramName in result) {
+			throw new UsageError(`duplicate ${paramName_} option`);
+		}
+
+		result[paramName] = paramValue;
+	}
+
+	return result;
 }
 
 // returns a boolean of allowMultiple === false
@@ -183,6 +216,7 @@ function parseCompileOptions(args) {
 	const options = {
 		output: parseOption(args, "-o", "--output"),
 		includeDirs: parseOption(args, "-I", "--include", true),
+		parameters: parseNamedOption(args, "-D"),
 		optimize: parseFlag(args, "-O", "--optimize")
 	};
 
@@ -213,6 +247,14 @@ function listIncludes(inputFile, dirs) {
 	return paths;
 }
 
+function filterModules(sources) {
+	return sources.filter(src => {
+		const [purpose, _] = extractScriptPurposeAndName(src);
+
+		return purpose == "module"
+	});
+}
+
 async function compile(args) {
 	const options = parseCompileOptions(args)
 
@@ -233,7 +275,13 @@ async function compile(args) {
 
 	const inputSource = sources.shift();
 
-	const uplc = Program.new(inputSource, sources).compile(options.optimize).serialize();
+	const program = Program.new(inputSource, filterModules(sources));
+
+	if (Object.keys(options.parameters).length > 0) {
+		program.parameters = options.parameters;
+	}
+
+	const uplc = program.compile(options.optimize).serialize();
 
 	if (options.output != null) {
 		fs.writeFileSync(options.output, uplc);
@@ -244,7 +292,8 @@ async function compile(args) {
 
 function parseEvalParamOptions(args) {
 	const options = {
-		includeDirs: parseOption(args, "-I", "--include", true)
+		includeDirs: parseOption(args, "-I", "--include", true),
+		parameters: parseNamedOption(args, "-D")
 	};
 
 	assertNoMoreOptions(args);
@@ -278,9 +327,13 @@ async function evalParam(args) {
 
 	const inputSource = sources.shift();
 
-	const program = Program.new(inputSource, sources);
+	const program = Program.new(inputSource, filterModules(sources));
 
-	const json = program.evalParam(paramName).data.toSchemaJson();
+	if (Object.keys(options.parameters).length > 0) {
+		program.parameters = options.parameters;
+	}
+
+	const json = program.parameters[paramName].toSchemaJson();
 
 	console.log(json);
 }
