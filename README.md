@@ -20,7 +20,7 @@ $ sudo npm i -g @hyperionbt/helios-cli
 $ helios compile my_script.hl --optimize --output my_script.json
 ```
 
-The cli searches in current directory for any necessary modules. Additional module search directories can be included using the `-I` flag.
+The cli searches in the current directory for any necessary Helios modules. Additional module search directories can be included using the `-I` flag.
 
 Parameters can be set using the `-D<param-name> <param-value>` option:
 ```bash
@@ -33,7 +33,7 @@ $ helios compile my_script.hl -DMY_PARAM 100 -o my_script.json
 $ helios eval my_script.hl MY_PARAM
 ```
 
-Additional module search directories can be included using the `-I` flag. Similar to `compile`, parameters can be set using the `-D<param-name> <param-value>` option.
+Similar to `compile`, additional module search directories can be included using the `-I` flag, and parameters can be set using the `-D<param-name> <param-value>` option.
 
 ### Calculating a script address
 
