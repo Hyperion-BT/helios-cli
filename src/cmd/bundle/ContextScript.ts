@@ -1,26 +1,24 @@
-import { Type } from "helios"
+import { ScriptTypes } from "helios"
 import { ModuleScript } from "./ModuleScript"
 
-export type ValidatorTypes = {[name: string]: Type}
-
 export class ContextScript extends ModuleScript {
-    #validatorTypes: null | ValidatorTypes
+    #scriptTypes: null | ScriptTypes
 
     constructor(path: string, src: string, name: string) {
         super(path, src, name)
 
-        this.#validatorTypes = null
+        this.#scriptTypes = null
     }
 
-    get validatorTypes(): ValidatorTypes {
-        if (this.#validatorTypes === null) {
+    get scriptTypes(): ScriptTypes {
+        if (this.#scriptTypes === null) {
             throw new Error("validatorTypes not yet registered")
         } else {
-            return this.#validatorTypes
+            return this.#scriptTypes
         }
     }
 
-    registerValidatorTypes(types: ValidatorTypes) {
-        this.#validatorTypes = types
+    registerScriptTypes(types: ScriptTypes) {
+        this.#scriptTypes = types
     }
 }

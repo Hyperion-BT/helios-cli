@@ -1,6 +1,6 @@
+import { ScriptTypes } from "helios"
 import { ValidatorScript } from "./ValidatorScript"
 import { Collection } from "./Collection"
-import { ValidatorTypes } from "./ContextScript"
 
 
 export class ValidatorCollection extends Collection<ValidatorScript> {
@@ -8,16 +8,12 @@ export class ValidatorCollection extends Collection<ValidatorScript> {
         super(collection)
     }
 
-    get validatorTypes(): ValidatorTypes {
+    get scriptTypes(): ScriptTypes {
         return this.map(item => item.type)
     }
 
-    get parametricValidatorTypes(): ValidatorTypes {
-        return this.map(item => item.parametricType)
-    }
-
-    registerValidatorTypes(types: ValidatorTypes) {
-        this.items.forEach(item => item.registerValidatorTypes(types))
+    registerValidatorTypes(types: ScriptTypes) {
+        this.items.forEach(item => item.registerScriptTypes(types))
     }
 
     registerValidators() {

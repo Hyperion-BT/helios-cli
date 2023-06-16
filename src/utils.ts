@@ -1,11 +1,7 @@
 import fs from "node:fs";
-import { resolve as absPath, dirname, join } from "node:path";
+import { resolve as absPath } from "node:path";
 
-import { 
-	LinkingProgram,
-	Program,
-    ScriptPurpose,
-	Type,
+import {
     extractScriptPurposeAndName
 } from "helios"
 
@@ -25,116 +21,6 @@ export class CliError extends Error {
 export class UsageError extends CliError {
 	constructor(message: string, code: number = 1) {
 		super(message, code);
-	}
-}
-
-const IMPORT_RE = /import\s*?\{[\s\S]*?\}[\s]*?from[\s]*?(\"[^\"]*?\")/m
-
-function stripQuotes(str: string): string {
-	return str.slice(1, str.length - 1)
-}
-
-function findModule(modules: HeliosFile[], path: string): HeliosFile {
-	for (let m of modules) {
-		if (m.path == path) {
-			return m
-		}
-	}
-
-	throw new Error(`module ${path} not found`)
-}
-
-export class HeliosFile {
-	readonly path: string
-    src: string
-    readonly purpose: ScriptPurpose
-    readonly name: string
-	#modules: HeliosFile[]
-	#scripts: {[name: string]: Type}
-	#program: null | Program
-
-    constructor(path: string, src: string) {
-		this.path = path
-        this.src = src
-
-        const [purpose, name] = assertDefined(extractScriptPurposeAndName(src))
-
-        this.purpose = purpose
-        this.name = name
-		this.#modules = []
-		this.#scripts = {}
-		this.#program = null
-    }
-
-	static read(path: string): HeliosFile {
-		return new HeliosFile(path, assertDefined(readFile(path)))
-	}
-
-	registerModules(modules: HeliosFile[]) {
-		this.#modules = modules
-
-		// also in-place change of path import statements
-		let statement = this.src.match(IMPORT_RE);
-		while (statement) {
-			const hlPath = statement[1]
-			const hlPathInner = stripQuotes(hlPath)
-
-			const depPath = join(dirname(this.path), hlPathInner)
-
-			const depModule = findModule(modules, depPath)
-
-			const depName = depModule.name
-
-			if (statement.index == undefined) {
-				throw new Error("unexpected")
-			}
-
-			// change the path by the name of the module
-			this.src = this.src.slice(0, statement.index) + statement[0].slice(0, statement[0].length - statement[1].length) + depName + this.src.slice(statement.index + statement[0].length)
-
-			statement = this.src.match(IMPORT_RE);
-		}
-	}
-
-	registerScripts(scripts: {[name: string]: Type}) {
-		this.#scripts = scripts;
-	}
-
-	get program(): Program {
-		if (!this.#program) {
-			if (this.purpose == "linking") {
-
-				this.#program = LinkingProgram.new(this.src, this.#modules.map(m => m.src), this.#scripts)
-			} else {
-				this.#program = Program.new(this.src, this.#modules.map(m => m.src))
-			}
-		}
-
-		return this.#program
-	}
-
-	get argNames(): string[] {
-		const argNames = this.program.mainFunc.argNames
-
-		if (this.purpose == "linking") {
-			return argNames.slice(0, argNames.length-1)
-		} else {
-			return argNames
-		}
-	}
-
-	get argTypes(): Type[] {
-		const argTypes = this.program.mainArgTypes
-
-		if (this.purpose == "linking") {
-			return argTypes.slice(0, argTypes.length-1)
-		} else {
-			return argTypes
-		}
-	}
-
-	get returnType(): Type {
-		return assertDefined(this.program.mainFunc.retTypes[0])
 	}
 }
 

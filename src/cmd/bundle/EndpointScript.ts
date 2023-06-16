@@ -34,7 +34,7 @@ export class EndpointScript extends ContextScript {
     get program(): LinkingProgram {
         if (!this.#program) {
             try {
-                this.#program = LinkingProgram.new(this.src, this.moduleSrcs, this.validatorTypes)
+                this.#program = LinkingProgram.new(this.src, this.moduleSrcs, this.scriptTypes)
             } catch (e) {
                 if (e instanceof UserError && e.src.fileIndex !== null) {
                     throw new Error(`'${[this.path].concat(this.modules.map(m => m.path))[e.src.fileIndex]}': ${e.message}`)
@@ -54,6 +54,7 @@ export class EndpointScript extends ContextScript {
     get argNames(): string[] {
         return this.program.mainFunc.argNames
     }
+    
     /**
      * Each argument of a function statement is named
      */
@@ -82,25 +83,12 @@ export class EndpointScript extends ContextScript {
     }
 
     compile(simplify: boolean = false): UplcProgram {
-        const program = LinkingProgram.new(this.src, this.moduleSrcs, this.validatorTypes)
+        const program = LinkingProgram.new(this.src, this.moduleSrcs, this.scriptTypes)
     
         const extra = new Map()
     
-        // TODO: agent as parameter, or as macro?
-        //extra.set("__helios__contractcontext__agent", new IR("(self) -> {__helios__address__from_data(##" + helios.bytesToHex(options.agent._toUplcData().toCbor()) + ")}"));
-    
-        for (let validatorName in this.validatorTypes) {
-            const validatorType = this.validatorTypes[validatorName]
-    
-            if (!(validatorType instanceof FuncType)) {
-                extra.set(`__helios__scriptcollection__${validatorName}`, new IR(`(self) -> {__core__macro__compile("${validatorName}", ())}`))
-            } else {
-                const inputArgs = validatorType.argTypes.map((_, i) => `arg${i}`).join(", ")
-
-                const compileArgs = validatorType.argTypes.map((at, i) => `${assertDefined(at.asDataType).path}____to_data(arg${i})`).join(", ")
-
-                extra.set(`__helios__scriptcollection__${validatorName}`, new IR(`(self) -> {(${inputArgs}) -> {__core__macro__compile("${validatorName}", ${compileArgs}, ())}}`));
-            }
+        for (let scriptName in this.scriptTypes) {
+            extra.set(`__helios__scriptcollection__${scriptName}`, new IR(`(self) -> {__core__macro__compile("${scriptName}", ())}`))
         }
     
         const ir = program.toIR(extra)

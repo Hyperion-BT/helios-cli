@@ -86,9 +86,9 @@ export class Bundle {
         endpoints.registerModules(modules)
         modules.registerModules(modules)
 
-        // 4. register validatorTypes with endpoints and other validators
-        endpoints.registerValidatorTypes(validators.parametricValidatorTypes)
-        validators.registerValidatorTypes(validators.validatorTypes)
+        // 4. register validatorTypes with endpoints and other validators (register with validators first because they are used when determining parametric validator types)
+        validators.registerValidatorTypes(validators.scriptTypes)
+        endpoints.registerScriptTypes(validators.scriptTypes);
 
         // 5. register validators themselves
         validators.registerValidators()
@@ -134,7 +134,11 @@ const site = Site.dummy();
 
         w.indent()
 
-        this.#validators.forEach(v => w.write(`\n${v.name}: "${bytesToHex(v.compile([], this.#options.simplify).toCbor())}",`))
+        this.#validators.forEach(v => {
+            const uplcProgram = v.compile([], this.#options.simplify)
+
+            w.write(`\n${v.name}: {cborHex: "${bytesToHex(uplcProgram.toCbor())}", properties: ${JSON.stringify(uplcProgram.properties)}},`)
+        })
 
         w.undent()
 
@@ -167,10 +171,21 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
     const result = await uplcProgram.run(uplcDataArgs.map(d => new helios.UplcDataValue(site, d)).concat([new helios.UplcDataValue(site, changeAddress._toUplcData())]), {
         ...helios.DEFAULT_UPLC_RTE_CALLBACKS,
         macros: {
+            now: async (args) => {
+                const slot = networkParams.liveSlot;
+
+                if (slot !== null) {
+                    return new helios.UplcInt(site, networkParams.slotToTime(slot));
+                } else {
+                    return new helios.UplcInt(site, (new Date()).getTime());
+                }
+            },
             compile: async (args) => {
                 const key = args.shift().string;
 
-                const uplcProgram = helios.UplcProgram.fromCbor(validators[key]).apply(args);
+                const raw = validators[key];
+
+                const uplcProgram = helios.UplcProgram.fromCbor(raw.cborHex, raw.properties).apply(args);
 
                 const scriptHash = uplcProgram.hash();
 
@@ -179,11 +194,17 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
                 return new helios.UplcByteArray(site, scriptHash);
             },
             finalize: async (args) => {
-                const tx = await helios.Tx.finalizeUplcData(args[0].data, networkParams, changeAddress, utxos, cache);
+                try {
+                    const tx = await helios.Tx.finalizeUplcData(args[0].data, networkParams, changeAddress, utxos, cache);
 
-                this.#txs.push(tx);
+                    this.#txs.push(tx);
+    
+                    return new helios.UplcDataValue(site, tx.toTxData(networkParams));
+                } catch (e) {
+                    console.log("failed to build tx", e.context);
 
-                return new helios.UplcDataValue(site, tx.toTxData(networkParams));
+                    throw e;
+                }
             },
             pick: async (args) => {
                 const address = helios.Address.fromUplcData(args[0].data);

@@ -1,5 +1,6 @@
 import { 
     ByteArrayData,
+    IRDefinitions,
     Program, 
     ScriptPurpose,
     Type,
@@ -10,18 +11,15 @@ import {
 } from "helios"
 
 const {
-    ArgType,
-    FuncType,
+    IR,
     IRProgram,
     IRParametricProgram,
     MintingPolicyHashType,
-    Site,
-    ValidatorHashType,
-    Word
+    StakingValidatorHashType,
+    ValidatorHashType
 } = exportedForBundling
 
-import { 
-    assert,
+import {
     assertDefined
 } from "../../utils"
 
@@ -55,7 +53,7 @@ export class ValidatorScript extends ContextScript {
     get program(): Program {
         if (!this.#program) {
             try {
-                this.#program = Program.new(this.src, this.modules.map(m => m.src))
+                this.#program = Program.new(this.src, this.moduleSrcs, this.scriptTypes)
             } catch(e) {
                 if (e instanceof UserError && e.src.fileIndex !== null) {
                     throw new Error(`'${[this.path].concat(this.modules.map(m => m.path))[e.src.fileIndex]}': ${e.message}`)
@@ -76,59 +74,51 @@ export class ValidatorScript extends ContextScript {
         return this.#validators
     }
 
-    get type(): Type {
+    get type(): exportedForBundling.ScriptHashType {
         switch(this.purpose) {
             case "spending":
                 return ValidatorHashType
             case "minting":
                 return MintingPolicyHashType
+            case "staking":
+                return StakingValidatorHashType
             default:
                 throw new Error("unhandled validator type")
         }
     }
-
-    get parametricType(): Type {
-        const baseType = this.type
-
-        const params = this.parameters
-
-        if (params.length == 0) {
-            return baseType
-        } else {
-            return new FuncType(
-                params, 
-                baseType
-            )
-        }
-    }
-
-    hasParameters(params: string[]): boolean {
-        const ownParams = this.parameters
-
-        return params.every(p => ownParams.findIndex(op => op[0] == p) != -1)
-    }
-
+    
     registerValidators(validators: ValidatorScript[]) {
         this.#validators = validators
     }
 
+    toTestIR(): exportedForBundling.IR {
+        const extra: IRDefinitions = new Map()
+    
+        for (let scriptName in this.scriptTypes) {
+            extra.set(`__helios__scriptcollection__${scriptName}`, new IR(`(self) -> {#}`))
+        }
+
+        return this.program.toIR(extra)
+    }
+
     compile(callers: string[], simplify: boolean = false): UplcProgram {
         if (callers.some(c => c == this.name)) {
-            throw new Error(`circular dependecy detected: ${callers.join(", ")}, ${this.name}`)
+            throw new Error(`circular dependecy detected: ${callers.join(" -> ")} -> ${this.name}`)
         }
-        const program = Program.new(this.src, this.moduleSrcs, this.validatorTypes)
 
-        const testIR = program.toIR()
+        const program = this.program
 
-        const extra = new Map()
+        const testIR = this.toTestIR()
 
-        for (let validatorName in this.validatorTypes) {
-            if (testIR.includes(`__helios__scriptcollection__${validatorName}`)) {
-                const validator = assertDefined(this.validators.find(v => v.name == validatorName))
+        const extra: IRDefinitions = new Map()
 
-                const validatorUplc = validator.compile(callers.concat([this.name]), simplify)
+        for (let scriptName in this.scriptTypes) {
+            if (testIR.includes(`__helios__scriptcollection__${scriptName}`)) {
+                const script = assertDefined(this.validators.find(v => v.name == scriptName))
 
-                extra.set(`__helios__scriptcollection__${validatorName}`, `##${bytesToHex((new ByteArrayData(validatorUplc.hash())).toCbor())}`)
+                const scriptUplc = script.compile(callers.concat([this.name]), simplify)
+
+                extra.set(`__helios__scriptcollection__${scriptName}`, new IR(`(self) -> {#${bytesToHex(scriptUplc.hash())}}`))
             }
         }
     
