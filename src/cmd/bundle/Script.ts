@@ -1,5 +1,3 @@
-import { ScriptPurpose } from "helios"
-
 export class Script {
     #path: string
     #src:  string

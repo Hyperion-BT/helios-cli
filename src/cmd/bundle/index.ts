@@ -5,12 +5,12 @@ import {
     Writer,
     parseFlag,
     assertNoMoreOptions
-} from "../../utils"
+} from "../../utils.js"
 
 import { 
     Bundle,
     BundleOptions
-} from "./Bundle"
+} from "./Bundle.js"
 
 function parseCompileOptions(args: string[]): BundleOptions {
 	const options = {

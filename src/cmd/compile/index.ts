@@ -14,7 +14,7 @@ import {
     parseOption,
     parseNamedOption,
     readFile
-} from "../../utils"
+} from "../../utils.js"
 
 function parseCompileOptions(args: string[]) {
 	const options = {

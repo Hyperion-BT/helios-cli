@@ -1,6 +1,7 @@
 import { ScriptTypes } from "helios"
-import { ValidatorScript } from "./ValidatorScript"
-import { Collection } from "./Collection"
+
+import { ValidatorScript } from "./ValidatorScript.js"
+import { Collection } from "./Collection.js"
 
 
 export class ValidatorCollection extends Collection<ValidatorScript> {

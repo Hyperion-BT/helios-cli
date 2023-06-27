@@ -1,5 +1,4 @@
-import { ModuleScript } from "./ModuleScript";
-import { Script } from "./Script";
+import { ModuleScript } from "./ModuleScript.js";
 
 export class Collection<T extends ModuleScript> {
     #collection: T[]

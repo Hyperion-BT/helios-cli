@@ -1,5 +1,6 @@
 import { ScriptTypes } from "helios"
-import { ModuleScript } from "./ModuleScript"
+
+import { ModuleScript } from "./ModuleScript.js"
 
 export class ContextScript extends ModuleScript {
     #scriptTypes: null | ScriptTypes

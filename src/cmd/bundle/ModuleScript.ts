@@ -3,7 +3,7 @@ import {
     join
 } from "node:path"
 
-import { Script } from "./Script"
+import { Script } from "./Script.js"
 
 const IMPORT_RE = /import\s*?\{[\s\S]*?\}[\s]*?from[\s]*?(\"[^\"]*?\")/m
 

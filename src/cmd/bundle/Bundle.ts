@@ -7,14 +7,14 @@ import {
     Writer,
     listFiles, 
     readFile
-} from "../../utils"
+} from "../../utils.js"
 
-import { EndpointCollection } from "./EndpointCollection"
-import { ValidatorCollection } from "./ValidatorCollection"
-import { ModuleCollection } from "./ModuleCollection"
-import { ValidatorScript } from "./ValidatorScript"
-import { EndpointScript } from "./EndpointScript"
-import { ModuleScript } from "./ModuleScript"
+import { EndpointCollection } from "./EndpointCollection.js"
+import { ValidatorCollection } from "./ValidatorCollection.js"
+import { ModuleCollection } from "./ModuleCollection.js"
+import { ValidatorScript } from "./ValidatorScript.js"
+import { EndpointScript } from "./EndpointScript.js"
+import { ModuleScript } from "./ModuleScript.js"
 
 export type BundleOptions = {
     simplify: boolean

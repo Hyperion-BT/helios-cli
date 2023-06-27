@@ -11,7 +11,7 @@ import {
     parseOption,
     parseNamedOption,
     readFile
-} from "../../utils"
+} from "../../utils.js"
 
 function parseEvalParamOptions(args: string[]) {
 	const options = {

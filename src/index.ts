@@ -10,25 +10,25 @@ import {
 import {
 	CliError,
 	UsageError
-} from "./utils"
+} from "./utils.js"
 
 import {
 	calcScriptAddress
-} from "./cmd/address"
+} from "./cmd/address/index.js"
 
 import {
 	main as bundle
-} from "./cmd/bundle"
+} from "./cmd/bundle/index.js"
 
 import {
 	compile
-} from "./cmd/compile"
+} from "./cmd/compile/index.js"
 
 import {
 	evalParam
-} from "./cmd/eval"
+} from "./cmd/eval/index.js"
 
-const VERSION: string = "0.14.2"
+const VERSION: string = "0.14.3"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>

@@ -9,7 +9,7 @@ import {
     assertNoMoreOptions,
     parseFlag,
     readFile
-} from "../../utils"
+} from "../../utils.js"
 
 
 function parseCalcScriptAddressOptions(args: string[]) {

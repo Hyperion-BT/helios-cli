@@ -1,5 +1,4 @@
-import { 
-    ByteArrayData,
+import {
     IRDefinitions,
     Program, 
     ScriptPurpose,
@@ -21,9 +20,9 @@ const {
 
 import {
     assertDefined
-} from "../../utils"
+} from "../../utils.js"
 
-import { ContextScript } from "./ContextScript"
+import { ContextScript } from "./ContextScript.js"
 
 export class ValidatorScript extends ContextScript {
     #purpose: ScriptPurpose
@@ -53,7 +52,10 @@ export class ValidatorScript extends ContextScript {
     get program(): Program {
         if (!this.#program) {
             try {
-                this.#program = Program.new(this.src, this.moduleSrcs, this.scriptTypes)
+                this.#program = Program.new(this.src, this.moduleSrcs, this.scriptTypes, {
+                    allowPosParams: false,
+                    invertEntryPoint: true 
+                });
             } catch(e) {
                 if (e instanceof UserError && e.src.fileIndex !== null) {
                     throw new Error(`'${[this.path].concat(this.modules.map(m => m.path))[e.src.fileIndex]}': ${e.message}`)
@@ -95,7 +97,7 @@ export class ValidatorScript extends ContextScript {
         const extra: IRDefinitions = new Map()
     
         for (let scriptName in this.scriptTypes) {
-            extra.set(`__helios__scriptcollection__${scriptName}`, new IR(`(self) -> {#}`))
+            extra.set(`__helios__scripts__${scriptName}`, new IR(`#`))
         }
 
         return this.program.toIR(extra)
@@ -113,12 +115,39 @@ export class ValidatorScript extends ContextScript {
         const extra: IRDefinitions = new Map()
 
         for (let scriptName in this.scriptTypes) {
-            if (testIR.includes(`__helios__scriptcollection__${scriptName}`)) {
-                const script = assertDefined(this.validators.find(v => v.name == scriptName))
+            const key = `__helios__scripts__${scriptName}`;
 
-                const scriptUplc = script.compile(callers.concat([this.name]), simplify)
+            if (testIR.includes(key)) {
+                if (scriptName == this.name) {
+                    let ir = new IR(`__PARAM_${this.program.nPosParams - 1}`);
 
-                extra.set(`__helios__scriptcollection__${scriptName}`, new IR(`(self) -> {#${bytesToHex(scriptUplc.hash())}}`))
+                    switch (this.purpose) {
+                        case "spending":
+                            ir = new IR([
+                                new IR(`__helios__scriptcontext__get_current_validator_hash(`),
+                                ir,
+                                new IR(`)()`)
+                            ]);
+                            break;
+                        case "minting":
+                            ir = new IR([
+                                new IR(`__helios__scriptcontext__get_current_minting_policy_hash(`),
+                                ir,
+                                new IR(`)()`)
+                            ]);
+                            break;
+                        default:
+                            throw new Error("unhandled purpose");
+                    }
+
+                    extra.set(key, ir);
+                } else {
+                    const script = assertDefined(this.validators.find(v => v.name == scriptName))
+
+                    const scriptUplc = script.compile(callers.concat([this.name]), simplify)
+
+                    extra.set(key, new IR(`#${bytesToHex(scriptUplc.hash())}`))
+                }
             }
         }
     

@@ -9,18 +9,17 @@ import {
 } from "helios"
 
 const {
-    FuncType,
     IR,
     IRProgram,
     TxType
 } = exportedForBundling
 
-import { ContextScript } from "./ContextScript"
+import { ContextScript } from "./ContextScript.js"
 
 import { 
     Writer,
     assertDefined
-} from "../../utils"
+} from "../../utils.js"
 
 export class EndpointScript extends ContextScript {
     #program: null | LinkingProgram
@@ -88,7 +87,7 @@ export class EndpointScript extends ContextScript {
         const extra = new Map()
     
         for (let scriptName in this.scriptTypes) {
-            extra.set(`__helios__scriptcollection__${scriptName}`, new IR(`(self) -> {__core__macro__compile("${scriptName}", ())}`))
+            extra.set(`__helios__scripts__${scriptName}`, new IR(`__core__macro__compile("${scriptName}", ())`))
         }
     
         const ir = program.toIR(extra)
@@ -101,7 +100,7 @@ export class EndpointScript extends ContextScript {
     writeDecl(w: Writer): void {
         
         w.write(
-`\nasync ${this.name}(${Array.from(this.argTypes.entries()).slice(0, this.nArgs-1).map(([name, type]) => `${name}: ${assertDefined(type.typeDetails?.inputType)}`).join(", ")}): Promise<${assertDefined(this.returnType.typeDetails?.outputType)}>;`
+`\nasync ${this.name}(${Array.from(this.argTypes.entries()).slice(0, this.nArgs-1).map(([name, type]) => `${name}: ${assertDefined(type.typeDetails?.inputType, `type details missing for arg '${name}: ${type.name}'`)}`).join(", ")}): Promise<${assertDefined(this.returnType.typeDetails?.outputType)}>;`
         )
     }
 
