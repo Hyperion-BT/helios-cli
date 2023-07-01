@@ -177,7 +177,7 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
                 if (slot !== null) {
                     return new helios.UplcInt(site, networkParams.slotToTime(slot));
                 } else {
-                    return new helios.UplcInt(site, (new Date()).getTime());
+                    return new helios.UplcInt(site, BigInt((new Date()).getTime()));
                 }
             },
             compile: async (args) => {

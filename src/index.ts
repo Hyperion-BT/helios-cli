@@ -28,7 +28,7 @@ import {
 	evalParam
 } from "./cmd/eval/index.js"
 
-const VERSION: string = "0.14.3"
+const VERSION: string = "0.14.4"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
