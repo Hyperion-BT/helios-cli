@@ -3,32 +3,23 @@
 import process from "node:process"
 
 import {
-	UserError as HeliosError,
+	UserError,
+	RuntimeError,
 	VERSION as HELIOS_VERSION
 } from "helios"
 
 import {
 	CliError,
 	UsageError
-} from "./utils.js"
+} from "./common/utils.js"
 
-import {
-	calcScriptAddress
-} from "./cmd/address/index.js"
+import addressCmd from "./address.js"
+import bundleCmd from "./bundle.js"
+import compileCmd from "./compile.js"
+import dagCmd from "./dag.js"
+import evalCmd from "./eval.js"
 
-import {
-	main as bundle
-} from "./cmd/bundle/index.js"
-
-import {
-	compile
-} from "./cmd/compile/index.js"
-
-import {
-	evalParam
-} from "./cmd/eval/index.js"
-
-const VERSION: string = "0.14.4"
+const VERSION: string = "0.15.0"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
@@ -73,16 +64,19 @@ async function mainInternal(args: string[]) {
 
 	switch (command) {
 		case "address":
-			await calcScriptAddress(args)
+			await addressCmd(args)
 			break
 		case "bundle":
-			await bundle(args)
+			await bundleCmd(args)
 			break
 		case "compile":
-			await compile(args)
+			await compileCmd(args)
+			break
+		case "dag":
+			await dagCmd(args)
 			break
 		case "eval":
-			await evalParam(args)
+			await evalCmd(args)
 			break
 		case "version":
 			printVersion()
@@ -103,11 +97,7 @@ async function main() {
 		} else if (e instanceof CliError) {
 			console.error(`Error: ${e.message}\n`)
 			process.exit(e.code)
-		} else if (e instanceof HeliosError) {
-			if (e.src.fileIndex !== null) {
-				console.error(`Error in file-no ${e.src.fileIndex}`)
-			}
-
+		} else if (e instanceof UserError || e instanceof RuntimeError) {
 			console.error(e.message)
 			process.exit(4)
 		} else {

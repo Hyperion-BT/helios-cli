@@ -1,6 +1,6 @@
 {
   "name": "@hyperionbt/helios-cli",
-  "version": "0.14.4",
+  "version": "0.15.0",
   "description": "CLI tool for compiling Cardano smart contracts written in Helios, and building Cardano transactions.",
   "main": "./dist/index.js",
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
-	"sync-helios": "cp -t ./node_modules/helios ../helios/*"
+    "sync-helios": "cp -t ./node_modules/helios ../helios/*"
   },
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   "license": "UNLICENSE",
   "homepage": "https://www.hyperion-bt.org/helios-book/cli/index.html",
   "dependencies": {
-    "helios": "npm:@hyperionbt/helios@^0.14.4"
+    "helios": "npm:@hyperionbt/helios@^0.15.0"
   },
   "keywords": [],
   "devDependencies": {
@@ -29,6 +29,6 @@
     "webpack-cli": "^5.1.1"
   },
   "files": [
-	  "./dist"
+    "./dist"
   ]
 }

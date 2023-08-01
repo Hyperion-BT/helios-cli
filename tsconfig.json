@@ -16,7 +16,11 @@
         "target": "esnext",
         "typeRoots": [
             "./node_modules/@types"
-        ]
+        ],
+        "baseUrl": "./",
+        "paths": {
+            "helios": ["./node_modules/helios/helios-internal.d.ts"]
+        }
     },
     "include": [
         "src"

@@ -1,4 +1,5 @@
 import {
+    assertDefined,
     IRDefinitions,
     Program, 
     ScriptPurpose,
@@ -6,21 +7,14 @@ import {
     UplcProgram,
     UserError,
     bytesToHex,
-    exportedForBundling
-} from "helios"
-
-const {
     IR,
     IRProgram,
     IRParametricProgram,
     MintingPolicyHashType,
+    ScriptHashType,
     StakingValidatorHashType,
     ValidatorHashType
-} = exportedForBundling
-
-import {
-    assertDefined
-} from "../../utils.js"
+} from "helios"
 
 import { ContextScript } from "./ContextScript.js"
 
@@ -28,6 +22,7 @@ export class ValidatorScript extends ContextScript {
     #purpose: ScriptPurpose
     #program: null | Program
     #validators: null | ValidatorScript[]
+    #dagDependencies: Set<string>
 
     constructor(path: string, src: string, name: string, purpose: ScriptPurpose) {
         super(path, src, name)
@@ -35,6 +30,7 @@ export class ValidatorScript extends ContextScript {
         this.#purpose = purpose
         this.#program = null
         this.#validators = null
+        this.#dagDependencies = new Set()
     }
 
     /**
@@ -51,18 +47,10 @@ export class ValidatorScript extends ContextScript {
 
     get program(): Program {
         if (!this.#program) {
-            try {
-                this.#program = Program.new(this.src, this.moduleSrcs, this.scriptTypes, {
-                    allowPosParams: false,
-                    invertEntryPoint: true 
-                });
-            } catch(e) {
-                if (e instanceof UserError && e.src.fileIndex !== null) {
-                    throw new Error(`'${[this.path].concat(this.modules.map(m => m.path))[e.src.fileIndex]}': ${e.message}`)
-                }
-
-                throw e
-            }
+            this.#program = Program.newInternal(this.src, this.moduleSrcs, this.scriptTypes, {
+                allowPosParams: false,
+                invertEntryPoint: true 
+            });
         }
 
         return this.#program
@@ -76,7 +64,7 @@ export class ValidatorScript extends ContextScript {
         return this.#validators
     }
 
-    get type(): exportedForBundling.ScriptHashType {
+    get type(): ScriptHashType {
         switch(this.purpose) {
             case "spending":
                 return ValidatorHashType
@@ -88,12 +76,20 @@ export class ValidatorScript extends ContextScript {
                 throw new Error("unhandled validator type")
         }
     }
+
+    get dagDependencies(): string[] {
+        if (this.#dagDependencies.size == 0) {
+            void this.compile([], false)
+        }
+
+        return Array.from(this.#dagDependencies)
+    }
     
     registerValidators(validators: ValidatorScript[]) {
         this.#validators = validators
     }
 
-    toTestIR(): exportedForBundling.IR {
+    toTestIR(): IR {
         const extra: IRDefinitions = new Map()
     
         for (let scriptName in this.scriptTypes) {
@@ -103,7 +99,7 @@ export class ValidatorScript extends ContextScript {
         return this.program.toIR(extra)
     }
 
-    compile(callers: string[], simplify: boolean = false): UplcProgram {
+    compile(callers: string[], simplify: boolean, dumpIR: boolean = false, simplifyDeps: boolean = true): UplcProgram {
         if (callers.some(c => c == this.name)) {
             throw new Error(`circular dependecy detected: ${callers.join(" -> ")} -> ${this.name}`)
         }
@@ -113,6 +109,8 @@ export class ValidatorScript extends ContextScript {
         const testIR = this.toTestIR()
 
         const extra: IRDefinitions = new Map()
+
+        this.#dagDependencies = new Set()
 
         for (let scriptName in this.scriptTypes) {
             const key = `__helios__scripts__${scriptName}`;
@@ -142,24 +140,38 @@ export class ValidatorScript extends ContextScript {
 
                     extra.set(key, ir);
                 } else {
-                    const script = assertDefined(this.validators.find(v => v.name == scriptName))
+                    this.#dagDependencies.add(scriptName)
 
-                    const scriptUplc = script.compile(callers.concat([this.name]), simplify)
+                    const script = this.validators.find(v => v.name == scriptName)
+                    
+                    if (!script) {
+                        throw new Error(`script ${scriptName} not found`)
+                    }
+
+                    const scriptUplc = script.compile(callers.concat([this.name]), simplifyDeps, false)
 
                     extra.set(key, new IR(`#${bytesToHex(scriptUplc.hash())}`))
                 }
             }
         }
-    
+
         const ir = program.toIR(extra)
 
         if (program.nPosParams > 0) {
             const irProgram = IRParametricProgram.new(ir, this.#purpose, program.nPosParams, simplify);
 
+            if (dumpIR) {
+                console.log(irProgram.program.expr.toString());
+            }
+
 		    return irProgram.toUplc()
         } else {
             const irProgram = IRProgram.new(ir, this.#purpose, simplify)
             
+            if (dumpIR) {
+                console.log(irProgram.expr.toString());
+            }
+
             return irProgram.toUplc()
         }
     }

@@ -1,4 +1,4 @@
-import { ModuleScript } from "./ModuleScript.js";
+import { ModuleScript } from "./ModuleScript.js"
 
 export class Collection<T extends ModuleScript> {
     #collection: T[]
@@ -31,5 +31,9 @@ export class Collection<T extends ModuleScript> {
 
     registerModules(modules: Collection<ModuleScript>) {
         this.#collection.forEach(s => s.registerModules(modules.items))
+    }
+
+    registerCodeMapFileIndices(codeMapFileIndices: Map<string, number>) {
+        this.#collection.forEach(s => s.registerCodeMapFileIndices(codeMapFileIndices))
     }
 }

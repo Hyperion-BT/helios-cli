@@ -1,7 +1,7 @@
 import { ScriptTypes } from "helios"
 import { Collection } from "./Collection.js"
 import { EndpointScript } from "./EndpointScript.js"
-import { Writer } from "../../utils.js"
+import { Writer } from "./utils.js"
 
 export class EndpointCollection extends Collection<EndpointScript> {
     constructor(collection: EndpointScript[] = []) {

@@ -14,9 +14,9 @@ import {
     parseOption,
     parseNamedOption,
     readFile
-} from "../../utils.js"
+} from "./common/utils.js"
 
-function parseCompileOptions(args: string[]) {
+function parseOptions(args: string[]) {
 	const options = {
 		output: parseOption(args, "-o", "--output") as string,
 		includeDirs: parseOption(args, "-I", "--include", true) as string[],
@@ -29,8 +29,8 @@ function parseCompileOptions(args: string[]) {
 	return options
 }
 
-export async function compile(args: string[]) {
-	const options = parseCompileOptions(args)
+export default async function cmd(args: string[]) {
+	const options = parseOptions(args)
 
 	const inputFile = args.shift()
 

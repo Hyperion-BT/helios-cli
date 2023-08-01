@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import { resolve as absPath } from "node:path";
+import fs from "node:fs"
+import { resolve as absPath } from "node:path"
 
 import {
     extractScriptPurposeAndName

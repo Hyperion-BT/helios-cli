@@ -11,9 +11,9 @@ import {
     parseOption,
     parseNamedOption,
     readFile
-} from "../../utils.js"
+} from "./common/utils.js"
 
-function parseEvalParamOptions(args: string[]) {
+function parseOptions(args: string[]) {
 	const options = {
 		includeDirs: parseOption(args, "-I", "--include", true) as string[],
 		parameters: parseNamedOption(args, "-D")
@@ -24,8 +24,8 @@ function parseEvalParamOptions(args: string[]) {
 	return options
 }
 
-export async function evalParam(args: string[]) {
-	const options = parseEvalParamOptions(args)
+export default async function cmd(args: string[]) {
+	const options = parseOptions(args)
 
 	const inputFile = args.shift()
 

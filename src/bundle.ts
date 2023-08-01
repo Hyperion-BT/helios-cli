@@ -1,20 +1,21 @@
-import process from "node:process"
+
 import { writeFileSync } from "node:fs"
 
 import { 
     Writer,
     parseFlag,
+    parseOption,
     assertNoMoreOptions
-} from "../../utils.js"
+} from "./common/utils.js"
 
 import { 
     Bundle,
     BundleOptions
-} from "./Bundle.js"
+} from "./common/Bundle.js"
 
-function parseCompileOptions(args: string[]): BundleOptions {
+function parseOptions(args: string[]): BundleOptions {
 	const options = {
-		simplify: parseFlag(args, "-O", "--optimize") as boolean
+        dumpIR: parseOption(args, "-d", "--dump-ir", true) as string[]
 	}
 
 	assertNoMoreOptions(args)
@@ -22,10 +23,10 @@ function parseCompileOptions(args: string[]): BundleOptions {
 	return options
 }
 
-export async function main(args: string[]) {
-    const options = parseCompileOptions(args)
+export default async function cmd(args: string[]) {
+    const options = parseOptions(args)
 
-    const bundle = await Bundle.init(process.cwd(), options)
+    const bundle = await Bundle.initHere(options)
 
     {
         const w = new Writer()

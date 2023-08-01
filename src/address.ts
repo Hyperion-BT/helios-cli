@@ -9,10 +9,10 @@ import {
     assertNoMoreOptions,
     parseFlag,
     readFile
-} from "../../utils.js"
+} from "./common/utils.js"
 
 
-function parseCalcScriptAddressOptions(args: string[]) {
+function parseOptions(args: string[]) {
 	const options = {
 		isMainnet: parseFlag(args, "-m", "--mainnet")
 	}
@@ -22,8 +22,8 @@ function parseCalcScriptAddressOptions(args: string[]) {
 	return options
 }
 
-export async function calcScriptAddress(args: string[]) {
-	const options = parseCalcScriptAddressOptions(args)
+export default async function cmd(args: string[]) {
+	const options = parseOptions(args)
 
 	const inputFile = args.shift()
 
