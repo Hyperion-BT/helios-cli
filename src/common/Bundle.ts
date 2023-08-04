@@ -58,7 +58,7 @@ export class Bundle {
     }
 
     static async init(dir: string, options: BundleOptions): Promise<Bundle> {
-        config.IGNORE_UNEVALUATED_CONSTANTS = true
+        config.set({IGNORE_UNEVALUATED_CONSTANTS: true})
 
         const sources: Source[] = []
 
@@ -203,8 +203,7 @@ export default class Contract {
 
 const cache = {};
 
-helios.config.AUTO_SET_VALIDITY_RANGE = true;
-helios.config.EXPERIMENTAL_CEK = true;
+helios.config.set({AUTO_SET_VALIDITY_RANGE: true, EXPERIMENTAL_CEK: true});
 
 const site = helios.Site.dummy();
         `)

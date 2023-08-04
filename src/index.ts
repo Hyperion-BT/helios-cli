@@ -18,8 +18,9 @@ import bundleCmd from "./bundle.js"
 import compileCmd from "./compile.js"
 import dagCmd from "./dag.js"
 import evalCmd from "./eval.js"
+import inspectError from "./inspectError.js"
 
-const VERSION: string = "0.15.0"
+const VERSION: string = "0.15.2"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
@@ -37,6 +38,8 @@ Commands:
   eval <input-file> <param-name>
     -I, --include   <include-module-dir>
     -D<param-name>  <param-value>
+  
+  inspect-blockfrost-error <input-file>
 
   version
 `
@@ -78,6 +81,9 @@ async function mainInternal(args: string[]) {
 		case "eval":
 			await evalCmd(args)
 			break
+		case "inspect-blockfrost-error":
+			await inspectError(args)
+			break;
 		case "version":
 			printVersion()
 			break
