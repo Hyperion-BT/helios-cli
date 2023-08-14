@@ -36,45 +36,5 @@ export class ModuleScript extends Script {
 
     registerModules(modules: ModuleScript[]) {
         this.#modules = modules
-
-        // also in-place change of path import statements
-		/*let statement = this.src.match(IMPORT_RE);
-		while (statement) {
-			const hlPath = statement[1]
-			const hlPathInner = hlPath.slice(1, hlPath.length - 1)
-
-			let depPath = join(dirname(this.path), hlPathInner)
-
-            if (existsSync(depPath) && statSync(depPath).isDirectory()) {
-                if (existsSync(join(depPath, "index.hl"))) {
-                    depPath = join(depPath, "index.hl")
-                } else if (existsSync(join(depPath, "index.helios"))) {
-                    depPath = join(depPath, "index.helios")
-                }
-            } else if (!extname(depPath)) {
-                if (existsSync(depPath + ".hl")) {
-                    depPath += ".hl"
-                } else if (existsSync(depPath + ".helios")) {
-                    depPath += ".helios"
-                }
-            }
-
-			const depModule = this.#modules.find(m => m.path == depPath)
-
-            if (!depModule) {
-                throw new Error(`dependency ${depPath} of ${this.name} not found`)
-            }
-
-			const depName = depModule.name
-
-			if (statement.index == undefined) {
-				throw new Error("unexpected")
-			}
-
-			// change the path by the name of the module
-			this.src = this.src.slice(0, statement.index) + statement[0].slice(0, statement[0].length - statement[1].length) + depName + this.src.slice(statement.index + statement[0].length)
-
-			statement = this.src.match(IMPORT_RE);
-		}*/
     }
 }

@@ -29,11 +29,11 @@ export class Collection<T extends ModuleScript> {
         return obj
     }
 
+    has(name: string): boolean {
+        return this.#collection.some(item => item.name == name)
+    }
+    
     registerModules(modules: Collection<ModuleScript>) {
         this.#collection.forEach(s => s.registerModules(modules.items))
-    }
-
-    registerCodeMapFileIndices(codeMapFileIndices: Map<string, number>) {
-        this.#collection.forEach(s => s.registerCodeMapFileIndices(codeMapFileIndices))
     }
 }

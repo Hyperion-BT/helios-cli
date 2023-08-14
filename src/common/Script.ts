@@ -26,12 +26,4 @@ export class Script {
     get name() {
         return this.#name
     }
-
-    get codeMapFileIndices(): (null | Map<string, number>) {
-        return this.#codeMapFileIndices
-    }
-
-    registerCodeMapFileIndices(m: Map<string, number>) {
-        this.#codeMapFileIndices = m
-    }
 }

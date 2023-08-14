@@ -38,6 +38,8 @@ export type BundleOptions = {
     dumpIR: string[]
 }
 
+type IsIncluded = (name: string) => boolean
+
 export class Bundle {
     #sources: Source[]
     #validators: ValidatorCollection
@@ -159,10 +161,6 @@ export class Bundle {
         sources.forEach((src, i) => {
             codeMapFileIndices.set(src.name, i)
         })
-
-        validators.registerCodeMapFileIndices(codeMapFileIndices)
-        endpoints.registerCodeMapFileIndices(codeMapFileIndices)
-        modules.registerCodeMapFileIndices(codeMapFileIndices)
         
         return new Bundle(sources, validators, modules, endpoints, options)
     }
@@ -180,7 +178,7 @@ export class Bundle {
     /**
      * Writes Typescript declarations.
      */
-    writeDecls(w: Writer) {
+    writeDecls(w: Writer, isIncluded: IsIncluded) {
         w.write(
 `import * as helios from "@hyperionbt/helios";
 
@@ -191,7 +189,11 @@ export default class Contract {
 
         w.indent()
 
-        this.#endpoints.writeDecls(w)
+        this.#endpoints.forEach(item => {
+            if (isIncluded(item.name)) {
+                item.writeDecl(w)
+            }
+        })
 
         w.undent()
 
@@ -209,25 +211,27 @@ const site = helios.Site.dummy();
         `)
     }
 
-    writeValidatorDefs(w: Writer) {
+    writeValidatorDefs(w: Writer, isIncluded: IsIncluded) {
         w.write(`\nconst validators = {`)
 
         w.indent()
 
         this.#validators.forEach(v => {
-            const uplcProgram = v.compile(
-                [], 
-                true, 
-                this.#options.dumpIR.findIndex(d => d == v.name) != -1
-            )
+            if (isIncluded(v.name)) {
+                const uplcProgram = v.compile(
+                    [], 
+                    true, 
+                    this.#options.dumpIR.findIndex(d => d == v.name) != -1
+                )
 
-            if (v.purpose == "spending") {
-                console.log(`validator ${v.name}: ${uplcProgram.validatorHash.hex}`)
-            } else if (v.purpose == "minting") {
-                console.log(`policy ${v.name}: ${uplcProgram.mintingPolicyHash.hex}`)
+                if (v.purpose == "spending") {
+                    console.log(`validator ${v.name}: ${uplcProgram.validatorHash.hex}`)
+                } else if (v.purpose == "minting") {
+                    console.log(`policy ${v.name}: ${uplcProgram.mintingPolicyHash.hex}`)
+                }
+
+                w.write(`\n${v.name}: {cborHex: "${bytesToHex(uplcProgram.toCbor())}", hash: "${bytesToHex(uplcProgram.hash())}", properties: ${JSON.stringify({...uplcProgram.properties, name: v.name})}},`)
             }
-
-            w.write(`\n${v.name}: {cborHex: "${bytesToHex(uplcProgram.toCbor())}", properties: ${JSON.stringify({...uplcProgram.properties, name: v.name})}},`)
         })
 
         w.undent()
@@ -235,31 +239,39 @@ const site = helios.Site.dummy();
         w.write("\n}")
     }
 
-    genCodeMapFileIndices(): Map<string, number> {
+    genCodeMapFileIndices(isIncluded: IsIncluded): Map<string, number> {
         const codeMapFileIndices: Map<string, number> = new Map()
 
-        this.#sources.forEach((src, i) => {
-            codeMapFileIndices.set(src.name, i)
+        let i = 0
+
+        this.#sources.forEach(src => {
+            if (isIncluded(src.name) || this.#modules.has(src.name)) {
+                codeMapFileIndices.set(src.name, i)
+
+                i += 1
+            }
         })
 
         return codeMapFileIndices
     }
 
-    writeUnsimplifiedValidatorDefs(w: Writer) {
+    writeUnsimplifiedValidatorDefs(w: Writer, isIncluded: IsIncluded) {
         w.write(`\nconst origValidators = {`)
 
         w.indent()
 
-        const codeMapFileIndices = this.genCodeMapFileIndices()
+        const codeMapFileIndices = this.genCodeMapFileIndices(isIncluded)
 
         this.#validators.forEach(v => {
-            const uplcProgram = v.compile(
-                [], 
-                false, 
-                false
-            )
+            if (isIncluded(v.name)) {
+                const uplcProgram = v.compile(
+                    [], 
+                    false, 
+                    false
+                )
 
-            w.write(`\n${v.name}: {cborHex: "${bytesToHex(uplcProgram.toCborWithMapping(codeMapFileIndices))}", properties: ${JSON.stringify({...uplcProgram.properties, name: v.name})}},`)
+                w.write(`\n${v.name}: {cborHex: "${bytesToHex(uplcProgram.toCborWithMapping(codeMapFileIndices))}", properties: ${JSON.stringify({...uplcProgram.properties, name: v.name})}},`)
+            }
         })
 
         w.undent()
@@ -267,13 +279,15 @@ const site = helios.Site.dummy();
         w.write("\n}")
     }
 
-    writeCodeMapSource(w: Writer) {
+    writeCodeMapSource(w: Writer, isIncluded: IsIncluded) {
         w.write(`\nconst rawSources = [`)
 
         w.indent()
 
         this.#sources.forEach(s => {
-            w.write(`\n{name: "${s.name}", lines: [${s.raw.split("\n").map(l => l.length.toString()).join(",")}]},`)
+            if (isIncluded(s.name) || this.#modules.has(s.name)) {
+                w.write(`\n{name: "${s.name}", lines: [${s.raw.split("\n").map(l => l.length.toString()).join(",")}]},`)
+            }
         })
 
         w.undent()
@@ -281,7 +295,7 @@ const site = helios.Site.dummy();
         w.write("\n]")
     }
 
-    writeContractDefs(w: Writer) {
+    writeContractDefs(w: Writer, isIncluded: IsIncluded) {
         w.write(`\nexport default class Contract {`)
 
         w.indent()
@@ -366,13 +380,15 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
 
             const raw = validators[key];
 
-            const uplcProgram = helios.UplcProgram.fromCbor(raw.cborHex, raw.properties).apply(args);
+            if (raw.hash in cache) {
+                return new helios.UplcByteArray(site, helios.hexToBytes(raw.hash));
+            } else {
+                const uplcProgram = helios.UplcProgram.fromCbor(raw.cborHex, raw.properties).apply(args);
 
-            const scriptHash = uplcProgram.hash();
+                cache[raw.hash] = uplcProgram;
 
-            cache[helios.bytesToHex(scriptHash)] = uplcProgram;
-
-            return new helios.UplcByteArray(site, scriptHash);
+                return new helios.UplcByteArray(site, helios.hexToBytes(raw.hash));
+            }
         },
         now: async (rte, args) => {
             return new helios.UplcAny(site);
@@ -465,12 +481,14 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
                     // add all validators explicitly as well, because they might not yet be compiled
                     for (let key in validators) {
                         const raw = validators[key];
+            
+                        validators_[raw.hash] = () => {
+                            const uplcProgram = helios.UplcProgram.fromCbor(raw.cborHex, raw.properties);
 
-                        const uplcProgram = helios.UplcProgram.fromCbor(raw.cborHex, raw.properties);
-            
-                        const scriptHash = uplcProgram.hash();
-            
-                        validators_[helios.bytesToHex(scriptHash)] = uplcProgram;            
+                            validators_[raw.hash] = uplcProgram;
+
+                            return uplcProgram;
+                        }
                     }
 
                     const tx = await helios.Tx.finalizeUplcData(args[0].data, networkParams, changeAddress, agentUtxos, validators_);
@@ -571,24 +589,28 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
 }
 `)
 
-        const codeMapFileIndices = this.genCodeMapFileIndices()
+        const codeMapFileIndices = this.genCodeMapFileIndices(isIncluded)
 
-        this.#endpoints.forEach(e => e.writeDef(w, codeMapFileIndices))
+        this.#endpoints.forEach(e => {
+            if (isIncluded(e.name)) {
+                e.writeDef(w, codeMapFileIndices)
+            }
+        })
 
         w.undent()
 
         w.write("\n}")
     }
 
-    writeDefs(w: Writer) {
+    writeDefs(w: Writer, isIncluded: IsIncluded) {
         this.writePreamble(w)
 
-        this.writeValidatorDefs(w)
+        this.writeValidatorDefs(w, isIncluded)
 
-        this.writeUnsimplifiedValidatorDefs(w)
+        this.writeUnsimplifiedValidatorDefs(w, isIncluded)
 
-        this.writeCodeMapSource(w)
+        this.writeCodeMapSource(w, isIncluded)
 
-        this.writeContractDefs(w)
+        this.writeContractDefs(w, isIncluded)
     }
 }

@@ -1,7 +1,22 @@
 import * as fs from "fs"
 import * as path from "path"
 import { assert, assertDefined, assertNoMoreOptions } from "./common/utils.js"
-import { ByteArrayData, ConstrData, IntData, ListData, MapData, Site, UplcData, UplcDataValue, bytesToHex } from "helios"
+import { 
+    BitWriter, 
+    ByteArrayData,
+    ConstrData, 
+    IntData,
+    ListData, 
+    MapData, 
+    Site, 
+    UplcConst, 
+    UplcData, 
+    UplcDataValue, 
+    UplcInt, 
+    UplcByteArray,
+    UplcProgram, 
+    bytesToHex
+} from "helios"
 
 type InspectErrorOptions = {}
 
@@ -10,6 +25,8 @@ function parseDagOptions(args: string[]): InspectErrorOptions {
     
     return {}
 }
+
+let argCount = 0
 
 function unstring(str: string): string {
     let n = str.length
@@ -467,7 +484,33 @@ class Source {
         const d = this.eatUplcData() 
 
         if (d) {
-            return (new UplcDataValue(Site.dummy(), d)).toString()
+            const value = (new UplcDataValue(Site.dummy(), d))
+
+            const ct = new UplcConst(value)
+
+            const bw = new BitWriter()
+
+            ct.toFlat(bw)
+
+            UplcByteArray.writeBytes(bw, d.toCbor(), false)
+
+            const by = bw.finalize(false)
+
+            const pr = new UplcProgram(ct)
+
+            const pb = pr.serializeBytes()
+
+            fs.writeFileSync(`./arg-${argCount}-as-program.flat`, new Uint8Array(pb))
+
+            fs.writeFileSync(`./arg-${argCount}.flat`, new Uint8Array(by))
+
+            fs.writeFileSync(`./arg-${argCount}-as-program.cborHex`, bytesToHex(pr.toCbor()))
+
+            const s = `${argCount}=${value.toString()}`
+
+            argCount++
+
+            return s;
         }
 
         const w = this.eatWord()
