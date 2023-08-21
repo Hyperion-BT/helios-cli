@@ -7,23 +7,19 @@ import {
     assertNoMoreOptions
 } from "./common/utils.js"
 
+import { Config } from "./common/Config.js"
+
 import { 
     Bundle,
     BundleOptions
 } from "./common/Bundle.js"
 
-type Config = {
-    stages: {
-        [name: string]: {
-            exclude?: string[]
-            include?: string[]
-        }
-    }
-}
+
 
 function parseOptions(args: string[]): BundleOptions {
 	const options = {
-        dumpIR: parseOption(args, "-d", "--dump-ir", true) as string[]
+        dumpIR: parseOption(args, "-d", "--dump-ir", true) as string[],
+        lock: parseFlag(args, "-l", "--lock") as boolean
 	}
 
 	assertNoMoreOptions(args)
@@ -34,11 +30,11 @@ function parseOptions(args: string[]): BundleOptions {
 export default async function cmd(args: string[]) {
     const options = parseOptions(args)
 
-    const bundle = await Bundle.initHere(options)
-
     const config: Config = existsSync("./helios.config.json") ?
         JSON.parse(readFileSync("./helios.config.json").toString()) :
         {stages: {main: {}}}
+
+    const bundle = await Bundle.initHere(config, options)
 
     for (let key in config.stages) {
         const include = new Set(config.stages[key].include ?? [])
@@ -72,6 +68,10 @@ export default async function cmd(args: string[]) {
             bundle.writeDefs(w, isIncluded)
     
             writeFileSync(`dist/${key}/index.js`, w.toString())
+        }
+
+        if (options.lock) {
+            bundle.writeLock()
         }
     }
     

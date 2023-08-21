@@ -20,7 +20,7 @@ import dagCmd from "./dag.js"
 import evalCmd from "./eval.js"
 import inspectError from "./inspectError.js"
 
-const VERSION: string = "0.15.3"
+const VERSION: string = "0.15.4"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
@@ -28,6 +28,10 @@ const USAGE: string = `Usage:
 Commands:
   address <json-file>
     -m, --mainnet
+
+  bundle
+    -l, --lock
+	-d, --dump-ir <name-of-script>
 
   compile <input-file> 
     -I, --include   <include-module-dir>

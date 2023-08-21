@@ -1,9 +1,11 @@
 import {
     assertDefined,
     IRDefinitions,
+    DatumRedeemerProgram,
     Program, 
     ScriptPurpose,
     Type,
+    ToIRContext,
     UplcProgram,
     UserError,
     bytesToHex,
@@ -96,7 +98,17 @@ export class ValidatorScript extends ContextScript {
             extra.set(`__helios__scripts__${scriptName}`, new IR(`#`))
         }
 
-        return this.program.toIR(extra)
+        return this.program.toIR(new ToIRContext(false), extra)
+    }
+
+    compileDatumCheck(): null | UplcProgram {
+        const program = this.program
+
+        if (program instanceof DatumRedeemerProgram) {
+            return program.compileDatumCheck()
+        } else {
+            return null
+        }
     }
 
     compile(callers: string[], simplify: boolean, dumpIR: boolean = false, simplifyDeps: boolean = true): UplcProgram {
@@ -155,7 +167,7 @@ export class ValidatorScript extends ContextScript {
             }
         }
 
-        const ir = program.toIR(extra)
+        const ir = program.toIR(new ToIRContext(simplify), extra)
 
         if (program.nPosParams > 0) {
             const irProgram = IRParametricProgram.new(ir, this.#purpose, program.nPosParams, simplify);

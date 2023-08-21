@@ -2,20 +2,25 @@ import process from "node:process"
 
 import {
     existsSync,
-    statSync
+    readFileSync,
+    statSync,
+    writeFileSync
 } from "node:fs"
 
 import {
     dirname, 
     extname,
-    join
+    join,
+    resolve
 } from "node:path"
 
 import { 
+    Program,
     Source,
     StringLiteral,
+    UplcProgram,
     bytesToHex,
-    config,
+    config as heliosConfig,
     extractScriptPurposeAndName,
     setImportPathTranslator
 } from "helios"
@@ -33,9 +38,11 @@ import { ValidatorScript } from "./ValidatorScript.js"
 import { EndpointScript } from "./EndpointScript.js"
 import { ModuleScript } from "./ModuleScript.js"
 import { Dag } from "./Dag.js"
+import { Config, DEFAULT_CONFIG } from "./Config.js"
 
 export type BundleOptions = {
     dumpIR: string[]
+    lock?: boolean
 }
 
 type IsIncluded = (name: string) => boolean
@@ -45,22 +52,36 @@ export class Bundle {
     #validators: ValidatorCollection
     #modules: ModuleCollection
     #endpoints: EndpointCollection
+    #config: Config
     #options: BundleOptions
+    #lock: {[name: string]: string} // TODO: per-stage
 
-    constructor(sources: Source[], validators: ValidatorCollection, modules: ModuleCollection, endpoints: EndpointCollection, options: BundleOptions) {
+    constructor(
+        sources: Source[], 
+        validators: ValidatorCollection, 
+        modules: ModuleCollection, 
+        endpoints: EndpointCollection, 
+        config: Config,
+        options: BundleOptions
+    ) {
         this.#sources = sources
         this.#validators = validators
         this.#modules = modules
         this.#endpoints = endpoints
+        this.#config = config
         this.#options = options
+        this.#lock = existsSync("./helios-lock.json") ? JSON.parse(readFileSync("./helios-lock.json").toString()) : {}
     }
 
-    static async initHere(options: BundleOptions = {dumpIR: []}): Promise<Bundle> {
-        return Bundle.init(process.cwd(), options)
+    static async initHere(config: Config = DEFAULT_CONFIG, options: BundleOptions = {dumpIR: []}): Promise<Bundle> {
+        return Bundle.init(process.cwd(), config, options)
     }
 
-    static async init(dir: string, options: BundleOptions): Promise<Bundle> {
-        config.set({IGNORE_UNEVALUATED_CONSTANTS: true})
+    static async init(dir: string, config: Config, options: BundleOptions): Promise<Bundle> {
+        heliosConfig.set({
+            CHECK_CASTS: true,
+            IGNORE_UNEVALUATED_CONSTANTS: true
+        })
 
         const sources: Source[] = []
 
@@ -124,7 +145,7 @@ export class Bundle {
 
             const importPath = path.value
 
-			let depPath = join(dirname(currentPath), importPath)
+			let depPath = join(currentPath ? dirname(currentPath) : process.cwd(), importPath)
 
             if (existsSync(depPath) && statSync(depPath).isDirectory()) {
                 if (existsSync(join(depPath, "index.hl"))) {
@@ -162,7 +183,7 @@ export class Bundle {
             codeMapFileIndices.set(src.name, i)
         })
         
-        return new Bundle(sources, validators, modules, endpoints, options)
+        return new Bundle(sources, validators, modules, endpoints, config, options)
     }
 
     generateDag(): Dag {
@@ -181,6 +202,13 @@ export class Bundle {
     writeDecls(w: Writer, isIncluded: IsIncluded) {
         w.write(
 `import * as helios from "@hyperionbt/helios";
+
+/**
+ * Checks if UTxOs sitting at a Contract address have a valid Datum.
+ * Returns true if the given UTxO is sitting at an unrecognized address.
+ * Note: the original datum data must be attached for hashed datums.
+ */ 
+export function hasValidDatum(input: helios.TxInput): Promise<boolean>;
 
 export default class Contract {
     constructor(agent: helios.Wallet, network: helios.Network);
@@ -211,6 +239,25 @@ const site = helios.Site.dummy();
         `)
     }
 
+    compileExtraDatumCheck(props: {file: string, typeName: string}): UplcProgram {
+        const modules = this.#modules.items.slice()
+
+        // TODO: allow resolution via module
+        const mainSrc = `testing datumCheck
+import {${props.typeName}} from "${props.file}"
+
+func main(a: ${props.typeName}) -> ${props.typeName} {
+    a
+}`
+
+        const program = Program.newInternal(mainSrc, modules.map(m => m.src), this.#validators.scriptTypes, {
+            allowPosParams: false,
+            invertEntryPoint: false 
+        })
+
+        return program.compile(false)
+    }
+
     writeValidatorDefs(w: Writer, isIncluded: IsIncluded) {
         w.write(`\nconst validators = {`)
 
@@ -224,13 +271,52 @@ const site = helios.Site.dummy();
                     this.#options.dumpIR.findIndex(d => d == v.name) != -1
                 )
 
+                const datumCheckProgram: (null | UplcProgram) = v.compileDatumCheck()
+
                 if (v.purpose == "spending") {
-                    console.log(`validator ${v.name}: ${uplcProgram.validatorHash.hex}`)
+                    const hash = uplcProgram.validatorHash.hex
+                    const prev = this.#lock[v.name]
+                    
+                    if (prev && prev != hash) {
+                        throw new Error(`hash changed for validator ${v.name}`)
+                    }
+
+                    this.#lock[v.name] = hash
+
+                    console.log(`validator ${v.name}: ${hash}`)
                 } else if (v.purpose == "minting") {
-                    console.log(`policy ${v.name}: ${uplcProgram.mintingPolicyHash.hex}`)
+                    const hash = uplcProgram.mintingPolicyHash.hex
+                    const prev = this.#lock[v.name]
+
+                    if (prev && prev != hash) {
+                        throw new Error(`hash changed for policy ${v.name}`)
+                    }
+
+                    this.#lock[v.name] = hash
+
+                    console.log(`policy ${v.name}: ${hash}`)
                 }
 
-                w.write(`\n${v.name}: {cborHex: "${bytesToHex(uplcProgram.toCbor())}", hash: "${bytesToHex(uplcProgram.hash())}", properties: ${JSON.stringify({...uplcProgram.properties, name: v.name})}},`)
+                const datumChecks: UplcProgram[] = []
+
+                if (datumCheckProgram) {
+                    datumChecks.push(datumCheckProgram)
+                }
+
+                // add others
+                if (this.#config.extraDatumTypes) {
+                    for (let datumType of (this.#config?.extraDatumTypes[v.name] ?? [])) {
+                        datumChecks.push(this.compileExtraDatumCheck(datumType));
+                    }
+                }
+
+                w.write(`
+    ${v.name}: {
+        cborHex: "${bytesToHex(uplcProgram.toCbor())}", 
+        hash: "${bytesToHex(uplcProgram.hash())}", 
+        properties: ${JSON.stringify({...uplcProgram.properties, name: v.name})}${datumCheckProgram ? `,
+        datumCheck: [${datumChecks.map(dc => '"' + bytesToHex(dc.toCbor()) + '"').join(", ")}]`: ""}
+    },`)
             }
         })
 
@@ -293,6 +379,52 @@ const site = helios.Site.dummy();
         w.undent()
 
         w.write("\n]")
+    }
+
+    writeUtils(w: Writer) {
+        w.write(`\nexport async function hasValidDatum(input) {
+    const vh = input.address.validatorHash;
+
+    if (vh) {
+        if (input.output.datum) {
+            const i = Object.values(validators).findIndex(v => v.hash == vh.hex);
+            const v = Object.values(validators)[i];
+            const name = Object.keys(validators)[i];
+
+            try {
+                if (v) {
+                    for (let dc of v.datumCheck) {
+                        const program = helios.UplcProgram.fromCbor(dc)
+
+                        const data = input.output.datum.data
+
+                        const res = await program.run([new helios.UplcDataValue(site, data)]);
+
+                        if (res instanceof Error) {
+                            continue;
+                        }
+
+                        helios.assert(res.data.toString() == data.toString(), "internal error, input data doesn't match output data");
+
+                        return true;
+                    }
+
+                    return false;
+                } else {
+                    return true;
+                }
+            } catch(e) {
+                console.error("input at " + input.address.toBech32() + " (" + name + ") failed datum check: ", e);
+
+                return false;
+            }
+        } else {
+            return false;
+        }
+    } else {
+        return true;
+    }
+}`)
     }
 
     writeContractDefs(w: Writer, isIncluded: IsIncluded) {
@@ -493,6 +625,24 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
 
                     const tx = await helios.Tx.finalizeUplcData(args[0].data, networkParams, changeAddress, agentUtxos, validators_);
 
+                    // make sure each output has a valid datum
+                    for (let i = 0; i < tx.body.outputs.length; i++) {
+                        const output = tx.body.outputs[i];
+                        const input = new helios.TxInput(new helios.TxOutputId({txId: tx.id(), utxoId: i}), output);
+
+                        if (!(await hasValidDatum(input))) {
+                            const i = Object.values(validators).findIndex(v => v.hash == output.address.validatorHash.hex);
+
+                            if (i != -1) {
+                                const name = Object.keys(validators)[i];
+
+                                return rte.error("output sent to " + name + " has an invalid datum");
+                            } else {
+                                return rte.error("output sent to " + output.address.toBech32() + " has an invalid datum");
+                            }
+                        }
+                    }
+
                     this.#txs.push(tx);
     
                     return new helios.UplcDataValue(site, tx.toTxData(networkParams));
@@ -528,7 +678,7 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
                     } else {
                         console.log("failed to build tx", e.context ?? "");
 
-                        throw e;
+                        return rte.error(e.message);
                     }
                 }
             },
@@ -539,12 +689,16 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
 
                 let utxos;
 
-                if (address.toBech32() == baseAddress.toBech32()) {
-                    utxos = algo(agentUtxos, value)[0];
-                } else if (cachedAddresses.has(address.toBech32())) {
-                    utxos = algo(cachedAddresses.get(address.toBech32()), value)[0];
-                } else {
-                    utxos = algo(await this.#network.getUtxos(address), value)[0];
+                try {
+                    if (address.toBech32() == baseAddress.toBech32()) {
+                        utxos = algo(agentUtxos, value)[0];
+                    } else if (cachedAddresses.has(address.toBech32())) {
+                        utxos = algo(cachedAddresses.get(address.toBech32()), value)[0];
+                    } else {
+                        utxos = algo(await this.#network.getUtxos(address), value)[0];
+                    }
+                } catch (e) {
+                    return rte.error(e.message);
                 }
 
                 return new helios.UplcList(site, helios.UplcType.newDataType(),
@@ -555,10 +709,15 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
                 const id = helios.TxOutputId.fromUplcData(args[0].data);
 
                 let utxo;
-                if (cachedUtxos.has(id.toString())) {
-                    utxo = cachedUtxos.get(id.toString());
-                } else {
-                    utxo = await this.#network.getUtxo(id);
+
+                try {
+                    if (cachedUtxos.has(id.toString())) {
+                        utxo = cachedUtxos.get(id.toString());
+                    } else {
+                        utxo = await this.#network.getUtxo(id);
+                    }
+                } catch (e) {
+                    return rte.error(e.message);
                 }
 
                 return new helios.UplcDataValue(site, utxo.toData());
@@ -568,10 +727,14 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
 
                 let utxos;
 
-                if (cachedAddresses.has(addr.toBech32())) {
-                    utxos = cachedAddresses.get(addr.toBech32());
-                } else {
-                    utxos = await this.#network.getUtxos(addr);
+                try {
+                    if (cachedAddresses.has(addr.toBech32())) {
+                        utxos = cachedAddresses.get(addr.toBech32());
+                    } else {
+                        utxos = await this.#network.getUtxos(addr);
+                    }
+                } catch (e) {
+                    return rte.error(e.message);
                 }
 
                 return new helios.UplcList(site, helios.UplcType.newDataType(),
@@ -611,6 +774,12 @@ async runLinkingProgram(uplcProgram, uplcDataArgs) {
 
         this.writeCodeMapSource(w, isIncluded)
 
+        this.writeUtils(w)
+
         this.writeContractDefs(w, isIncluded)
+    }
+
+    writeLock() {
+        writeFileSync("./helios-lock.json", JSON.stringify(this.#lock, undefined, 4))
     }
 }

@@ -6,6 +6,7 @@ import {
     Type,
     TxType,
     UplcProgram,
+    ToIRContext,
     UserError,
     bytesToHex
 } from "helios"
@@ -78,7 +79,7 @@ export class EndpointScript extends ContextScript {
             extra.set(`__helios__scripts__${scriptName}`, new IR(`__core__macro__compile("${scriptName}", ())`))
         }
     
-        const ir = program.toIR(extra)
+        const ir = program.toIR(new ToIRContext(false), extra)
     
         const irProgram = IRProgram.new(ir, "linking", false)
         
