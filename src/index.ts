@@ -20,7 +20,7 @@ import dagCmd from "./dag.js"
 import evalCmd from "./eval.js"
 import inspectError from "./inspectError.js"
 
-const VERSION: string = "0.15.4"
+const VERSION: string = "0.15.6"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
