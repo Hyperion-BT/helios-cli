@@ -20,7 +20,7 @@ import {
 
 type InspectErrorOptions = {}
 
-function parseDagOptions(args: string[]): InspectErrorOptions {
+function parseInspectErrorOptions(args: string[]): InspectErrorOptions {
     assertNoMoreOptions(args)
     
     return {}
@@ -583,7 +583,7 @@ function unwrap(src: Source, indent: string = ""): string[][] {
 }
 
 export default async function cmd(args: string[]) {
-    void parseDagOptions(args)
+    void parseInspectErrorOptions(args)
 
     const relFilePath = assertDefined(args.shift(), "no file specified")
 

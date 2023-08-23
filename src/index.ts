@@ -19,13 +19,16 @@ import compileCmd from "./compile.js"
 import dagCmd from "./dag.js"
 import evalCmd from "./eval.js"
 import inspectError from "./inspectError.js"
+import inspectTx from "./inspectTx.js"
+import convertToFlat from "./convertToFlat.js"
 
-const VERSION: string = "0.15.7"
+const VERSION: string = "0.15.8"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
 
 Commands:
+
   address <json-file>
     -m, --mainnet
 
@@ -39,17 +42,24 @@ Commands:
     -O, --optimize
     -D<param-name>  <param-value>
 
+  dag
+
   eval <input-file> <param-name>
     -I, --include   <include-module-dir>
     -D<param-name>  <param-value>
+
+  flat <input-file-with-cbor-hex>
+    -o, --output    <output-file>  (defaults to <input-file>.flat)
   
   inspect-blockfrost-error <input-file>
+
+  inspect-tx <input-file-with-cbor-hex>
 
   version
 `
 
 function printVersion() {
-	console.log(`Helios-CLI version: ${VERSION}`)
+	console.log(`Helios cli version: ${VERSION}`)
 	console.log(`Helios lib version: ${HELIOS_VERSION}`)
 }
 
@@ -85,8 +95,14 @@ async function mainInternal(args: string[]) {
 		case "eval":
 			await evalCmd(args)
 			break
+		case "flat":
+			await convertToFlat(args)
+			break
 		case "inspect-blockfrost-error":
 			await inspectError(args)
+			break;
+		case "inspect-tx":
+			await inspectTx(args)
 			break;
 		case "version":
 			printVersion()
