@@ -22,7 +22,7 @@ import inspectError from "./inspectError.js"
 import inspectTx from "./inspectTx.js"
 import convertToFlat from "./convertToFlat.js"
 
-const VERSION: string = "0.15.8"
+const VERSION: string = "0.15.10"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
