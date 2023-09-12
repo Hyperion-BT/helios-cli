@@ -81,7 +81,7 @@ export class EndpointScript extends ContextScript {
     
         const ir = program.toIR(new ToIRContext(false), extra)
     
-        const irProgram = IRProgram.new(ir, "linking", false)
+        const irProgram = IRProgram.new(ir, "endpoint", false)
         
         return irProgram.toUplc()
     }
@@ -107,7 +107,7 @@ export class EndpointScript extends ContextScript {
         w.write(`
     const program = helios.UplcProgram.fromCborWithMapping("${bytesToHex(this.compile().toCborWithMapping(codeMapFileIndices))}", this.getSources());
 
-    const result = await this.runLinkingProgram(program, [${this.argNames.slice(0, this.nArgs-1).join(", ")}]);
+    const result = await this.runEndpointProgram(program, [${this.argNames.slice(0, this.nArgs-1).join(", ")}]);
     
     return await helios.uplcToJs(${JSON.stringify(assertDefined(this.returnType.typeDetails?.internalType))}, result, this.uplcToJsHelpers);`
         )

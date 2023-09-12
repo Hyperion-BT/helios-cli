@@ -119,7 +119,7 @@ export class Bundle {
                 case "staking":
                     validators.add(new ValidatorScript(path, src, name, purpose))
                     break
-                case "linking":
+                case "endpoint":
                     endpoints.add(new EndpointScript(path, src, name))
                     break
                 case "module":
@@ -233,7 +233,7 @@ export default class Contract {
 
 const cache = {};
 
-helios.config.set({AUTO_SET_VALIDITY_RANGE: true, EXPERIMENTAL_CEK: true});
+helios.config.set({AUTO_SET_VALIDITY_RANGE: true});
 
 const site = helios.Site.dummy();
         `)
@@ -490,7 +490,7 @@ get jsToUplcHelpers() {
     }
 }
 
-async runLinkingProgram(uplcProgram, uplcDataArgs) {
+async runEndpointProgram(uplcProgram, uplcDataArgs) {
     const [baseAddress, changeAddress] = await Promise.all([
         this.#agentHelper.baseAddress,
         this.#agentHelper.changeAddress
