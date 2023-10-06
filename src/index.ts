@@ -24,7 +24,7 @@ import convertToFlat from "./convertToFlat.js"
 import listUtxos from "./listUtxos.js"
 import genWalletPhrase from "./genWalletPhrase.js"
 
-const VERSION: string = "0.15.12"
+const VERSION: string = "0.15.13"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
