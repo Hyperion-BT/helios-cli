@@ -10,8 +10,7 @@ import {
 import {
     dirname, 
     extname,
-    join,
-    resolve
+    join
 } from "node:path"
 
 import { 
@@ -46,6 +45,15 @@ export type BundleOptions = {
 }
 
 type IsIncluded = (name: string) => boolean
+
+const RESERVED_ENDPOINTS = new Set([
+    "agent",
+    "network",
+    "getSources",
+    "jsToUplcHelpers",
+    "uplcToJsHelpers",
+    "runEndpointProgram"
+])
 
 export class Bundle {
     #sources: Source[]
@@ -120,6 +128,9 @@ export class Bundle {
                     validators.add(new ValidatorScript(path, src, name, purpose))
                     break
                 case "endpoint":
+                    if (RESERVED_ENDPOINTS.has(name)) {
+                        throw new Error(`'${name}' is reserved can be used as an endpoint name`)
+                    }
                     endpoints.add(new EndpointScript(path, src, name))
                     break
                 case "module":
@@ -212,6 +223,9 @@ export function hasValidDatum(input: helios.TxInput): Promise<boolean>;
 
 export default class Contract {
     constructor(agent: helios.Wallet, network: helios.Network);
+
+    get agent(): helios.Wallet;
+    get network(): helios.Network;
 `
         )
 
@@ -445,6 +459,14 @@ constructor(agent, network) {
     this.#network = network;
     this.#txs = [];
     this.#sources = null;
+}
+
+get agent() {
+    return this.#agent;
+}
+
+get network() {
+    return this.#network;
 }
 
 getSources() {

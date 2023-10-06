@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-import { assertClass, TxOutput, BlockfrostV0, Tx, hexToBytes } from "helios"
+import { assertClass, TxOutput, Tx, hexToBytes, KoiosV0 } from "helios"
 import { assert, assertDefined, assertNoMoreOptions } from "./common/utils.js"
 
 type InspectTxOptions = {}
@@ -26,11 +26,7 @@ export default async function cmd(args: string[]) {
 
     const tx = Tx.fromCbor(bytes)
 
-    const network = await BlockfrostV0.resolveUsingUtxo(tx.body.inputs[0], {
-        "preview": "previewIMakoqNtbySYNVIpOsPKv16ZV4vhes6B",
-        "preprod": "preprod0pfhlHkVoJ3Bkwn3Ap3lP1VAysoIqwFl",
-        "mainnet": "mainnetqsDaHl6e6lo3M2vnfMfddXxOrJoKtoIA"
-    })
+    const network = await KoiosV0.resolveUsingUtxo(tx.body.inputs[0])
     
     const params = await network.getParameters()
     

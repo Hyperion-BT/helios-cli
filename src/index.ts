@@ -21,8 +21,10 @@ import evalCmd from "./eval.js"
 import inspectError from "./inspectError.js"
 import inspectTx from "./inspectTx.js"
 import convertToFlat from "./convertToFlat.js"
+import listUtxos from "./listUtxos.js"
+import genWalletPhrase from "./genWalletPhrase.js"
 
-const VERSION: string = "0.15.11"
+const VERSION: string = "0.15.12"
 
 const USAGE: string = `Usage:
   helios [-h|--help] <command> <command-options>
@@ -51,9 +53,13 @@ Commands:
   flat <input-file-with-cbor-hex>
     -o, --output    <output-file>  (defaults to <input-file>.flat)
   
+  gen-wallet-phrase 
+
   inspect-blockfrost-error <input-file>
 
   inspect-tx <input-file-with-cbor-hex>
+
+  list-utxos <network-name> <address>
 
   version
 `
@@ -98,12 +104,18 @@ async function mainInternal(args: string[]) {
 		case "flat":
 			await convertToFlat(args)
 			break
+		case "gen-wallet-phrase":
+			await genWalletPhrase(args)
+			break
 		case "inspect-blockfrost-error":
 			await inspectError(args)
 			break;
 		case "inspect-tx":
 			await inspectTx(args)
 			break;
+		case "list-utxos":
+			await listUtxos(args)
+			break
 		case "version":
 			printVersion()
 			break
