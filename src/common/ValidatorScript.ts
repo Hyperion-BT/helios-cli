@@ -173,7 +173,7 @@ export class ValidatorScript extends ContextScript {
             const irProgram = IRParametricProgram.new(ir, this.#purpose, program.nPosParams, simplify);
 
             if (dumpIR) {
-                console.log(irProgram.program.expr.toString());
+                console.log(irProgram.program.annotate());
             }
 
 		    return irProgram.toUplc()
@@ -181,7 +181,7 @@ export class ValidatorScript extends ContextScript {
             const irProgram = IRProgram.new(ir, this.#purpose, simplify)
             
             if (dumpIR) {
-                console.log(irProgram.expr.toString());
+                console.log(irProgram.annotate());
             }
 
             return irProgram.toUplc()
