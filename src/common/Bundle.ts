@@ -309,6 +309,17 @@ func main(a: ${props.typeName}) -> ${props.typeName} {
                     this.#lock[v.name] = hash
 
                     console.log(`policy ${v.name}: ${hash}`)
+                } else if (v.purpose == "staking") {
+                    const hash = uplcProgram.stakingValidatorHash.hex
+                    const prev = this.#lock[v.name]
+
+                    if (prev && prev != hash) {
+                        throw new Error(`hash changed for staking-validator ${v.name}`)
+                    }
+
+                    this.#lock[v.name] = hash
+
+                    console.log(`staking-validator ${v.name}: ${hash}`)
                 }
 
                 const datumChecks: UplcProgram[] = []
