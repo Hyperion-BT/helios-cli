@@ -61,13 +61,9 @@ export class EndpointScript extends ContextScript {
 	}
 
     get returnType(): DataType {
-        const types = this.program.mainFunc.retTypes
+        const type = this.program.mainFunc.retType;
 
-        if (types.length != 1) {
-            throw new Error("expected a single return value")
-        }
-
-        return assertDefined(types[0].asDataType)
+        return assertDefined(type.asDataType)
     }
 
     compile(): UplcProgram {
