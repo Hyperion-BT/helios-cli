@@ -17,19 +17,24 @@ import {
     Writer,
     assertDefined
 } from "./utils.js"
+import { ConstDefinitions } from "./Config.js"
 
 export class EndpointScript extends ContextScript {
     #program: null | Program
+    #define: ConstDefinitions
 
-    constructor(path: string, src: string, name: string) {
+    constructor(path: string, src: string, name: string, define: ConstDefinitions) {
         super(path, src, name)
 
         this.#program = null
+        this.#define = define
     }
 
     get program(): Program {
         if (!this.#program) {
             this.#program = Program.newInternal(this.src, this.moduleSrcs, this.scriptTypes)
+
+            this.#program.parameters = this.#define
         }
 
         return this.#program

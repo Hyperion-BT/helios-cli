@@ -37,7 +37,7 @@ import { ValidatorScript } from "./ValidatorScript.js"
 import { EndpointScript } from "./EndpointScript.js"
 import { ModuleScript } from "./ModuleScript.js"
 import { Dag } from "./Dag.js"
-import { Config, DEFAULT_CONFIG } from "./Config.js"
+import { ConstDefinitions, ExtraDatumTypes } from "./Config.js"
 
 export type BundleOptions = {
     dumpIR: string[]
@@ -60,7 +60,6 @@ export class Bundle {
     #validators: ValidatorCollection
     #modules: ModuleCollection
     #endpoints: EndpointCollection
-    #config: Config
     #options: BundleOptions
     #lock: {[name: string]: string} // TODO: per-stage
 
@@ -69,23 +68,21 @@ export class Bundle {
         validators: ValidatorCollection, 
         modules: ModuleCollection, 
         endpoints: EndpointCollection, 
-        config: Config,
         options: BundleOptions
     ) {
         this.#sources = sources
         this.#validators = validators
         this.#modules = modules
         this.#endpoints = endpoints
-        this.#config = config
         this.#options = options
         this.#lock = existsSync("./helios-lock.json") ? JSON.parse(readFileSync("./helios-lock.json").toString()) : {}
     }
 
-    static async initHere(config: Config = DEFAULT_CONFIG, options: BundleOptions = {dumpIR: []}): Promise<Bundle> {
-        return Bundle.init(process.cwd(), config, options)
+    static async initHere(define: ConstDefinitions = {}, options: BundleOptions = {dumpIR: []}): Promise<Bundle> {
+        return Bundle.init(process.cwd(), define, options)
     }
 
-    static async init(dir: string, config: Config, options: BundleOptions): Promise<Bundle> {
+    static async init(dir: string, define: ConstDefinitions, options: BundleOptions): Promise<Bundle> {
         heliosConfig.set({
             CHECK_CASTS: true,
             IGNORE_UNEVALUATED_CONSTANTS: true
@@ -125,13 +122,13 @@ export class Bundle {
                 case "spending":
                 case "minting":
                 case "staking":
-                    validators.add(new ValidatorScript(path, src, name, purpose))
+                    validators.add(new ValidatorScript(path, src, name, purpose, define))
                     break
                 case "endpoint":
                     if (RESERVED_ENDPOINTS.has(name)) {
                         throw new Error(`'${name}' is reserved can be used as an endpoint name`)
                     }
-                    endpoints.add(new EndpointScript(path, src, name))
+                    endpoints.add(new EndpointScript(path, src, name, define))
                     break
                 case "module":
                     modules.add(new ModuleScript(path, src, name))
@@ -194,7 +191,7 @@ export class Bundle {
             codeMapFileIndices.set(src.name, i)
         })
         
-        return new Bundle(sources, validators, modules, endpoints, config, options)
+        return new Bundle(sources, validators, modules, endpoints, options)
     }
 
     generateDag(): Dag {
@@ -272,7 +269,7 @@ func main(a: ${props.typeName}) -> ${props.typeName} {
         return program.compile(false)
     }
 
-    writeValidatorDefs(w: Writer, isIncluded: IsIncluded) {
+    writeValidatorDefs(w: Writer, isIncluded: IsIncluded, extraDatumTypes: ExtraDatumTypes) {
         w.write(`\nconst validators = {`)
 
         w.indent()
@@ -329,12 +326,10 @@ func main(a: ${props.typeName}) -> ${props.typeName} {
                 }
 
                 // add others
-                if (this.#config.extraDatumTypes) {
-                    for (let datumType of (this.#config?.extraDatumTypes[v.name] ?? [])) {
-                        datumChecks.push(this.compileExtraDatumCheck(datumType));
-                    }
+                for (let datumType of (extraDatumTypes[v.name] ?? [])) {
+                    datumChecks.push(this.compileExtraDatumCheck(datumType));
                 }
-
+            
                 w.write(`
     ${v.name}: {
         cborHex: "${bytesToHex(uplcProgram.toCbor())}", 
@@ -798,10 +793,10 @@ async runEndpointProgram(uplcProgram, uplcDataArgs) {
         w.write("\n}")
     }
 
-    writeDefs(w: Writer, isIncluded: IsIncluded) {
+    writeDefs(w: Writer, isIncluded: IsIncluded, extraDatumTypes: ExtraDatumTypes) {
         this.writePreamble(w)
 
-        this.writeValidatorDefs(w, isIncluded)
+        this.writeValidatorDefs(w, isIncluded, extraDatumTypes)
 
         this.writeUnsimplifiedValidatorDefs(w, isIncluded)
 

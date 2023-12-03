@@ -19,18 +19,21 @@ import {
 } from "helios"
 
 import { ContextScript } from "./ContextScript.js"
+import { ConstDefinitions } from "./Config.js"
 
 export class ValidatorScript extends ContextScript {
     #purpose: ScriptPurpose
     #program: null | Program
+    #define: ConstDefinitions
     #validators: null | ValidatorScript[]
     #dagDependencies: Set<string>
 
-    constructor(path: string, src: string, name: string, purpose: ScriptPurpose) {
+    constructor(path: string, src: string, name: string, purpose: ScriptPurpose, define: ConstDefinitions) {
         super(path, src, name)
 
         this.#purpose = purpose
         this.#program = null
+        this.#define = define
         this.#validators = null
         this.#dagDependencies = new Set()
     }
@@ -53,6 +56,8 @@ export class ValidatorScript extends ContextScript {
                 allowPosParams: false,
                 invertEntryPoint: true 
             });
+
+            this.#program.parameters = this.#define
         }
 
         return this.#program
