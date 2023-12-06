@@ -37,7 +37,7 @@ export default async function cmd(args: string[]) {
     const config: Config = existsSync("./helios.config.json") ?
         JSON.parse(readFileSync("./helios.config.json").toString()) : (
             existsSync(heliosConfigPath) ?
-                await eval(`import("${heliosConfigPath}")`) : 
+                (await eval(`import("${heliosConfigPath}")`))?.default ?? {stages: {main: {}}} : 
                 {stages: {main: {}}}
         )
 
