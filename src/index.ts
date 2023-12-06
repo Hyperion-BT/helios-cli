@@ -14,6 +14,7 @@ import {
 } from "./common/utils.js"
 
 import addressCmd from "./address.js"
+import addressInfo from "./addressInfo.js"
 import bundleCmd from "./bundle.js"
 import compileCmd from "./compile.js"
 import dagCmd from "./dag.js"
@@ -23,6 +24,7 @@ import inspectTx from "./inspectTx.js"
 import convertToFlat from "./convertToFlat.js"
 import listUtxos from "./listUtxos.js"
 import genWalletPhrase from "./genWalletPhrase.js"
+import printWalletInfo from "./walletInfo.js"
 
 const VERSION: string = "0.16.6"
 
@@ -33,6 +35,8 @@ Commands:
 
   address <json-file>
     -m, --mainnet
+
+  address-info <address>
 
   bundle
     -l, --lock
@@ -62,6 +66,8 @@ Commands:
   list-utxos <network-name> <address>
 
   version
+
+  wallet-info <phrase> | <private-key-key>
 `
 
 function printVersion() {
@@ -88,6 +94,9 @@ async function mainInternal(args: string[]) {
 	switch (command) {
 		case "address":
 			await addressCmd(args)
+			break
+		case "address-info":
+			await addressInfo(args)
 			break
 		case "bundle":
 			await bundleCmd(args)
@@ -118,6 +127,9 @@ async function mainInternal(args: string[]) {
 			break
 		case "version":
 			printVersion()
+			break
+		case "wallet-info":
+			printWalletInfo(args)
 			break
 		default:
 			throw new UsageError(`unrecognized command "${command}"`)

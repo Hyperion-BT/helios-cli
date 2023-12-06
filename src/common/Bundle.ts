@@ -239,12 +239,12 @@ export default class Contract {
         w.write("\n}")
     }
 
-    writePreamble(w: Writer) {
+    writePreamble(w: Writer, isTestnet: boolean) {
         w.write(`import * as helios from "@hyperionbt/helios";
 
 const cache = {};
 
-helios.config.set({AUTO_SET_VALIDITY_RANGE: true});
+helios.config.set({AUTO_SET_VALIDITY_RANGE: true, IS_TESTNET: ${isTestnet ? "true" : "false"}});
 
 const site = helios.Site.dummy();
         `)
@@ -793,8 +793,8 @@ async runEndpointProgram(uplcProgram, uplcDataArgs) {
         w.write("\n}")
     }
 
-    writeDefs(w: Writer, isIncluded: IsIncluded, extraDatumTypes: ExtraDatumTypes) {
-        this.writePreamble(w)
+    writeDefs(w: Writer, isIncluded: IsIncluded, isTestnet: boolean, extraDatumTypes: ExtraDatumTypes) {
+        this.writePreamble(w, isTestnet)
 
         this.writeValidatorDefs(w, isIncluded, extraDatumTypes)
 

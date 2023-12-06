@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 
+import { resolve } from "node:path"
+
 import { 
     Writer,
     parseFlag,
@@ -30,22 +32,25 @@ function parseOptions(args: string[]): BundleOptions {
 export default async function cmd(args: string[]) {
     const options = parseOptions(args)
 
+    const heliosConfigPath = resolve("./helios.config.js")
+
     const config: Config = existsSync("./helios.config.json") ?
         JSON.parse(readFileSync("./helios.config.json").toString()) : (
-            existsSync("./helios.config.js") ?
-                await eval('import("./helios.config.js")') : 
+            existsSync(heliosConfigPath) ?
+                await eval(`import("${heliosConfigPath}")`) : 
                 {stages: {main: {}}}
         )
 
     for (let key in config.stages) {
-        const include = new Set(config.stages[key].include ?? [])
-        const exclude = new Set(config.stages[key].exclude ?? [])
+        const stageConfig = config.stages[key]
+        const include = new Set(stageConfig.include ?? [])
+        const exclude = new Set(stageConfig.exclude ?? [])
 
         if (include.size > 0 && exclude.size > 0) {
             throw new Error(`can't defined both include and exclude (see config for stage ${name})`)
         }
 
-        const bundle = await Bundle.initHere(config.stages[key]?.define ?? {}, options)
+        const bundle = await Bundle.initHere(stageConfig?.define ?? {}, options)
 
         const isIncluded = (name: string) => {
             if (include.size > 0) {
@@ -68,7 +73,7 @@ export default async function cmd(args: string[]) {
         {
             const w = new Writer()
     
-            bundle.writeDefs(w, isIncluded, config.extraDatumTypes ?? {})
+            bundle.writeDefs(w, isIncluded, !(stageConfig.isMainnet ?? false), config.extraDatumTypes ?? {})
     
             writeFileSync(`dist/${key}/index.js`, w.toString())
         }

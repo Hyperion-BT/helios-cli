@@ -7,13 +7,16 @@ export type ExtraDatumTypes = {
 
 export type ConstDefinitions = {[name: string]: any}
 
+type StageConfig = {
+    isMainnet?: boolean // defaults to false
+    exclude?: string[]
+    include?: string[]
+    define?: ConstDefinitions
+}
+
 export type Config = {
     stages: {
-        [name: string]: {
-            exclude?: string[]
-            include?: string[]
-            define?: ConstDefinitions
-        }
+        [name: string]: StageConfig
     },
     extraDatumTypes?: ExtraDatumTypes
 }
