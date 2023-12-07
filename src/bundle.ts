@@ -73,7 +73,7 @@ export default async function cmd(args: string[]) {
         {
             const w = new Writer()
     
-            bundle.writeDefs(w, isIncluded, !(stageConfig.isMainnet ?? false), config.extraDatumTypes ?? {})
+            bundle.writeDefs(w, isIncluded, !(stageConfig.isMainnet ?? false), config.extraDatumTypes ?? {}, stageConfig.define ?? {})
     
             writeFileSync(`dist/${key}/index.js`, w.toString())
         }

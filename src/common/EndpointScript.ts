@@ -72,8 +72,8 @@ export class EndpointScript extends ContextScript {
     }
 
     compile(): UplcProgram {
-        const program = Program.newInternal(this.src, this.moduleSrcs, this.scriptTypes)
-    
+        const program = this.program
+
         const extra = new Map()
     
         for (let scriptName in this.scriptTypes) {
@@ -94,7 +94,7 @@ export class EndpointScript extends ContextScript {
         )
     }
 
-    writeDef(w: Writer, codeMapFileIndices: Map<string, number>): void {
+    writeDef(w: Writer, codeMapFileIndices: Map<string, number>, define: ConstDefinitions): void {
         w.write(`\nasync ${this.name}(${this.argNames.slice(0, this.nArgs-1).join(", ")}) {`)
         
         w.indent()

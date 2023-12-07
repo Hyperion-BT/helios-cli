@@ -250,7 +250,7 @@ const site = helios.Site.dummy();
         `)
     }
 
-    compileExtraDatumCheck(props: {file: string, typeName: string}): UplcProgram {
+    compileExtraDatumCheck(props: {file: string, typeName: string}, define: ConstDefinitions): UplcProgram {
         const modules = this.#modules.items.slice()
 
         // TODO: allow resolution via module
@@ -266,10 +266,12 @@ func main(a: ${props.typeName}) -> ${props.typeName} {
             invertEntryPoint: false 
         })
 
+        program.parameters = define
+
         return program.compile(false)
     }
 
-    writeValidatorDefs(w: Writer, isIncluded: IsIncluded, extraDatumTypes: ExtraDatumTypes) {
+    writeValidatorDefs(w: Writer, isIncluded: IsIncluded, extraDatumTypes: ExtraDatumTypes, define: ConstDefinitions) {
         w.write(`\nconst validators = {`)
 
         w.indent()
@@ -327,7 +329,7 @@ func main(a: ${props.typeName}) -> ${props.typeName} {
 
                 // add others
                 for (let datumType of (extraDatumTypes[v.name] ?? [])) {
-                    datumChecks.push(this.compileExtraDatumCheck(datumType));
+                    datumChecks.push(this.compileExtraDatumCheck(datumType, define));
                 }
             
                 w.write(`
@@ -447,7 +449,7 @@ func main(a: ${props.typeName}) -> ${props.typeName} {
 }`)
     }
 
-    writeContractDefs(w: Writer, isIncluded: IsIncluded) {
+    writeContractDefs(w: Writer, isIncluded: IsIncluded, define: ConstDefinitions) {
         w.write(`\nexport default class Contract {`)
 
         w.indent()
@@ -784,7 +786,7 @@ async runEndpointProgram(uplcProgram, uplcDataArgs) {
 
         this.#endpoints.forEach(e => {
             if (isIncluded(e.name)) {
-                e.writeDef(w, codeMapFileIndices)
+                e.writeDef(w, codeMapFileIndices, define)
             }
         })
 
@@ -793,10 +795,10 @@ async runEndpointProgram(uplcProgram, uplcDataArgs) {
         w.write("\n}")
     }
 
-    writeDefs(w: Writer, isIncluded: IsIncluded, isTestnet: boolean, extraDatumTypes: ExtraDatumTypes) {
+    writeDefs(w: Writer, isIncluded: IsIncluded, isTestnet: boolean, extraDatumTypes: ExtraDatumTypes, define: ConstDefinitions) {
         this.writePreamble(w, isTestnet)
 
-        this.writeValidatorDefs(w, isIncluded, extraDatumTypes)
+        this.writeValidatorDefs(w, isIncluded, extraDatumTypes, define)
 
         this.writeUnsimplifiedValidatorDefs(w, isIncluded)
 
@@ -804,7 +806,7 @@ async runEndpointProgram(uplcProgram, uplcDataArgs) {
 
         this.writeUtils(w)
 
-        this.writeContractDefs(w, isIncluded)
+        this.writeContractDefs(w, isIncluded, define)
     }
 
     writeLock() {
